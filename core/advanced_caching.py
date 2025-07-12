@@ -17,7 +17,7 @@ import threading
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any, Callable, Tuple
+from typing import Dict, List, Optional, Any, Callable
 from enum import Enum
 
 import logging
@@ -381,12 +381,12 @@ class QueryCache:
         cache_key = self._generate_cache_key(operation, *args, **kwargs)
         return self._cache.get(cache_key)
     
-    def cache_result(self, operation: str, result: Any, ttl: Optional[float] = None, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> None:
+    def cache_result(self, operation: str, result: Any, ttl: Optional[float] = None, *args: Any, **kwargs: Any) -> None:
         """Cache a result for an operation."""
         cache_key = self._generate_cache_key(operation, *args, **kwargs)
         self._cache.set(cache_key, result, ttl)
     
-    def invalidate_on_event(self, event: str, **context: Dict[str, Any]) -> int:
+    def invalidate_on_event(self, event: str, **context: Any) -> int:
         """Invalidate caches when specific events occur."""
         patterns = self._invalidation_rules.get(event, [])
         total_invalidated = 0

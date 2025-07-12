@@ -11,7 +11,7 @@ import uuid
 import logging
 import sys
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Iterator, Callable, Set
+from typing import Dict, List, Optional, Iterator, Callable, Set, Type, Tuple, Any
 from datetime import datetime
 
 from core.base_nodes import Node
@@ -30,8 +30,8 @@ from core.relationships import Relationship
 from core.metadata_models import ModelMetadata, ValidationRule
 from core.sfm_enums import EnumValidator
 from core.memory_management import MemoryMonitor, MemoryUsageStats, EvictionStrategy, EvictableGraph
-from core.advanced_caching import QueryCache, cached_operation
-from core.performance_metrics import get_metrics_collector, timed_operation
+from core.advanced_caching import QueryCache
+from core.performance_metrics import timed_operation
 
 # Set up logger for lazy loading operations
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class NodeTypeRegistry:
     def __init__(self):
         """Initialize the registry with ordered type mappings."""
         # Order matters for inheritance - most specific types first
-        self._type_handlers = [
+        self._type_handlers: List[Tuple[Type[Node], str]] = [
             # Core nodes with inheritance considerations
             (ValueFlow, 'value_flows'),  # Before Flow
             (GovernanceStructure, 'governance_structures'),
@@ -197,7 +197,7 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
                 del state[key]
         return state
     
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         """Custom pickle deserialization to restore non-serializable objects."""
         self.__dict__.update(state)
         # Restore non-serializable objects after unpickling
@@ -259,7 +259,7 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
 
         # Cache invalidation
         if self._enable_advanced_caching and hasattr(self, '_query_cache') and self._query_cache:
-            self._query_cache.invalidate_on_event('node_added', node_id=node.id)
+            self._query_cache.invalidate_on_event('node_added', node_id=self._get_node_id_for_cache(node.id))  # type: ignore[arg-type]
 
         return node
 
@@ -289,8 +289,8 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
         # Cache invalidation
         if self._enable_advanced_caching and hasattr(self, '_query_cache') and self._query_cache:
             self._query_cache.invalidate_on_event('relationship_added', 
-                                               source_id=relationship.source_id,
-                                               target_id=relationship.target_id)
+                                               source_id=self._get_node_id_for_cache(relationship.source_id),
+                                               target_id=self._get_node_id_for_cache(relationship.target_id))
 
         return relationship
 
@@ -335,6 +335,10 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
         """Clear the relationship cache when relationships change."""
         self._relationship_cache.clear()
 
+    def _get_node_id_for_cache(self, node_id: uuid.UUID) -> str:
+        """Convert node ID to string format for cache operations."""
+        return str(node_id)
+
     @timed_operation("get_node_relationships")
     def get_node_relationships(self, node_id: uuid.UUID) -> List[Relationship]:
         """Get all relationships for a node with caching for performance."""
@@ -351,11 +355,11 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
             # Cache in advanced cache too
             if (self._enable_advanced_caching and 
                 hasattr(self, '_query_cache') and self._query_cache):
-                self._query_cache.cache_result("get_node_relationships", relationships, node_id=node_id)
+                self._query_cache.cache_result("get_node_relationships", relationships, node_id=self._get_node_id_for_cache(node_id))
             return relationships
 
         # Compute relationships for this node
-        relationships = []
+        relationships: List[Relationship] = []
         for relationship in self.relationships.values():
             if node_id in (relationship.source_id, relationship.target_id):
                 relationships.append(relationship)
@@ -371,7 +375,7 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
         # Cache in advanced cache
         if (self._enable_advanced_caching and 
             hasattr(self, '_query_cache') and self._query_cache):
-            self._query_cache.cache_result("get_node_relationships", relationships, ttl=1800, node_id=node_id)
+            self._query_cache.cache_result("get_node_relationships", relationships, ttl=1800, node_id=self._get_node_id_for_cache(node_id))
         
         return relationships
 
@@ -434,7 +438,7 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
             self._relationship_cache.pop(node_id, None)
             if (self._enable_advanced_caching and 
                 hasattr(self, '_query_cache') and self._query_cache):
-                self._query_cache.invalidate_on_event('node_removed', node_id=node_id)
+                self._query_cache.invalidate_on_event('node_removed', node_id=self._get_node_id_for_cache(node_id))  # type: ignore[arg-type]
             
             logger.debug(f"Evicted node {node_id} from memory")
             return True
@@ -487,9 +491,9 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
         if self._memory_monitor:
             self._memory_monitor.current_strategy = strategy
 
-    def get_memory_stats(self) -> Dict[str, any]:
+    def get_memory_stats(self) -> Dict[str, Any]:
         """Get memory management statistics."""
-        stats = {
+        stats: Dict[str, Any] = {
             "memory_limit_mb": self._memory_limit_mb,
             "total_nodes": len(self._node_index),
             "total_relationships": len(self.relationships),
@@ -498,10 +502,10 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
         }
         
         if self._memory_monitor:
-            stats.update(self._memory_monitor.get_eviction_stats())
+            stats.update(self._memory_monitor.get_eviction_stats())  # type: ignore[arg-type]
             
         if self._enable_advanced_caching and hasattr(self, '_query_cache') and self._query_cache:
-            stats["query_cache_stats"] = self._query_cache.get_stats()
+            stats["query_cache_stats"] = self._query_cache.get_stats()  # type: ignore[assignment]
             
         return stats
 
@@ -528,6 +532,6 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
         
         if (self._enable_advanced_caching and 
             hasattr(self, '_query_cache') and self._query_cache):
-            stats["query_cache"] = self._query_cache.get_stats()
+            stats["query_cache"] = self._query_cache.get_stats()  # type: ignore[assignment]
             
         return stats
