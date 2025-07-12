@@ -18,7 +18,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps
-from typing import Any, Dict, List, Optional, Callable, Union
+from typing import Any, Dict, List, Optional, Callable, TypeVar
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -59,10 +59,10 @@ class AuditEvent:
     transaction_id: Optional[str] = None
     level: AuditLevel = AuditLevel.INFO
     message: str = ""
-    data: Dict[str, Any] = field(default_factory=dict)
-    performance_metrics: Dict[str, float] = field(default_factory=dict)
+    data: Dict[str, Any] = field(default_factory=lambda: {})
+    performance_metrics: Dict[str, float] = field(default_factory=lambda: {})
     error_details: Optional[str] = None
-    security_context: Dict[str, Any] = field(default_factory=dict)
+    security_context: Dict[str, Any] = field(default_factory=lambda: {})
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert audit event to dictionary for logging."""
@@ -201,8 +201,8 @@ class AuditLogger:
                 "recent_events": 0
             }
         
-        events_by_type = {}
-        events_by_level = {}
+        events_by_type: Dict[str, int] = {}
+        events_by_level: Dict[str, int] = {}
         
         for event in self._audit_history:
             op_type = event.operation_type.value
@@ -228,9 +228,11 @@ class AuditLogger:
 _global_audit_logger = AuditLogger()
 
 
+F = TypeVar("F", bound=Callable[..., Any])
+
 def audit_operation(operation_type: OperationType, operation_name: Optional[str] = None,
                    entity_type: Optional[str] = None, include_performance: bool = True,
-                   level: AuditLevel = AuditLevel.INFO):
+                   level: AuditLevel = AuditLevel.INFO) -> Callable[[F], F]:
     """
     Decorator for automatic audit logging of operations.
     
@@ -241,9 +243,9 @@ def audit_operation(operation_type: OperationType, operation_name: Optional[str]
         include_performance: Whether to include performance metrics
         level: Audit level for the operation
     """
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: F) -> F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             op_name = operation_name or func.__name__
             start_time = time.time()
             
@@ -262,14 +264,17 @@ def audit_operation(operation_type: OperationType, operation_name: Optional[str]
                 
                 # Log successful operation
                 duration = time.time() - start_time
-                data = {"success": True}
+                success_data: Dict[str, Any] = {"success": True}
                 
                 # Try to extract entity ID from result
                 entity_id = None
-                if hasattr(result, 'id'):
+                if hasattr(result, 'id') and not callable(getattr(result, 'id', None)):
                     entity_id = str(result.id)
-                elif isinstance(result, dict) and 'id' in result:
-                    entity_id = str(result['id'])
+                elif isinstance(result, dict) and 'id' in result and result['id'] is not None:
+                    if isinstance(result['id'], (str, int, float, uuid.UUID)):
+                        entity_id = str(result['id'])
+                    else:
+                        entity_id = None
                 
                 _global_audit_logger.log_operation(
                     operation_type=operation_type,
@@ -277,7 +282,7 @@ def audit_operation(operation_type: OperationType, operation_name: Optional[str]
                     entity_type=entity_type,
                     entity_id=entity_id,
                     message=f"Successfully completed {op_name}",
-                    data=data,
+                    data=success_data,
                     level=level,
                     transaction_id=transaction_id
                 )
@@ -290,19 +295,19 @@ def audit_operation(operation_type: OperationType, operation_name: Optional[str]
                         entity_id=entity_id
                     )
                 
-                return result
+                return result  # type: ignore[return-value]
                 
             except Exception as e:
                 # Log failed operation
                 duration = time.time() - start_time
-                data = {"success": False, "error": str(e)}
+                error_data: Dict[str, Any] = {"success": False, "error": str(e)}
                 
                 event = AuditEvent(
                     operation_type=operation_type,
                     operation_name=op_name,
                     entity_type=entity_type,
                     message=f"Failed to complete {op_name}: {str(e)}",
-                    data=data,
+                    data=error_data,
                     level=AuditLevel.ERROR,
                     transaction_id=transaction_id,
                     error_details=str(e),
@@ -312,22 +317,20 @@ def audit_operation(operation_type: OperationType, operation_name: Optional[str]
                 
                 raise
         
-        return wrapper
+        return wrapper  # type: ignore[return-value]
     return decorator
-
-
 # Convenience functions for common operations
-def log_operation(operation_type: OperationType, operation_name: str, **kwargs):
+def log_operation(operation_type: OperationType, operation_name: str, **kwargs: Any) -> None:
     """Log an operation using the global audit logger."""
     _global_audit_logger.log_operation(operation_type, operation_name, **kwargs)
 
 
-def log_security_event(message: str, security_context: Dict[str, Any], **kwargs):
+def log_security_event(message: str, security_context: Dict[str, Any], **kwargs: Any) -> None:
     """Log a security event using the global audit logger."""
     _global_audit_logger.log_security_event(message, security_context, **kwargs)
 
 
-def log_performance_event(operation_name: str, duration: float, **kwargs):
+def log_performance_event(operation_name: str, duration: float, **kwargs: Any) -> None:
     """Log a performance event using the global audit logger."""
     _global_audit_logger.log_performance_event(operation_name, duration, **kwargs)
 

@@ -13,22 +13,12 @@ Features:
 """
 
 import time
-import uuid
-import pickle
 import threading
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set, Callable, Union
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Any, Callable, Tuple
 from enum import Enum
-
-try:
-    from cachetools import TTLCache, LRUCache
-    CACHETOOLS_AVAILABLE = True
-except ImportError:
-    TTLCache = None
-    LRUCache = None
-    CACHETOOLS_AVAILABLE = False
 
 import logging
 logger = logging.getLogger(__name__)
@@ -140,7 +130,7 @@ class CacheBackend(ABC):
     def delete_pattern(self, pattern: str) -> int:
         """Delete keys matching a pattern (default implementation)."""
         deleted = 0
-        keys_to_delete = []
+        keys_to_delete: List[str] = []
         
         # Simple pattern matching (can be enhanced with regex)
         for key in self.keys():
@@ -376,27 +366,27 @@ class QueryCache:
         self._invalidation_rules: Dict[str, List[str]] = {}
         
         # Cache key generators
-        self._key_generators: Dict[str, Callable] = {}
+        self._key_generators: Dict[str, Callable[..., Any]] = {}
     
     def register_invalidation_rule(self, event: str, cache_patterns: List[str]) -> None:
         """Register cache invalidation rules for specific events."""
         self._invalidation_rules[event] = cache_patterns
     
-    def register_key_generator(self, operation: str, generator: Callable) -> None:
+    def register_key_generator(self, operation: str, generator: Callable[..., Any]) -> None:
         """Register a cache key generator for an operation."""
         self._key_generators[operation] = generator
     
-    def get_cached_result(self, operation: str, *args, **kwargs) -> Optional[Any]:
+    def get_cached_result(self, operation: str, *args: Any, **kwargs: Any) -> Optional[Any]:
         """Get cached result for an operation."""
         cache_key = self._generate_cache_key(operation, *args, **kwargs)
         return self._cache.get(cache_key)
     
-    def cache_result(self, operation: str, result: Any, ttl: Optional[float] = None, *args, **kwargs) -> None:
+    def cache_result(self, operation: str, result: Any, ttl: Optional[float] = None, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> None:
         """Cache a result for an operation."""
         cache_key = self._generate_cache_key(operation, *args, **kwargs)
         self._cache.set(cache_key, result, ttl)
     
-    def invalidate_on_event(self, event: str, **context) -> int:
+    def invalidate_on_event(self, event: str, **context: Dict[str, Any]) -> int:
         """Invalidate caches when specific events occur."""
         patterns = self._invalidation_rules.get(event, [])
         total_invalidated = 0
@@ -410,7 +400,7 @@ class QueryCache:
         
         return total_invalidated
     
-    def _generate_cache_key(self, operation: str, *args, **kwargs) -> str:
+    def _generate_cache_key(self, operation: str, *args: Any, **kwargs: Dict[str, Any]) -> str:
         """Generate a cache key for an operation."""
         if operation in self._key_generators:
             return self._key_generators[operation](*args, **kwargs)
@@ -428,7 +418,7 @@ class QueryCache:
         # Add kwargs
         for k, v in sorted(kwargs.items()):
             if hasattr(v, 'id'):
-                key_parts.append(f"{k}:{v.id}")
+                key_parts.append(f"{k}:{getattr(v, 'id', v)}")
             else:
                 key_parts.append(f"{k}:{v}")
         
@@ -437,8 +427,8 @@ class QueryCache:
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         stats = self._cache.get_stats()
-        stats["invalidation_rules"] = len(self._invalidation_rules)
-        stats["registered_generators"] = len(self._key_generators)
+        stats["invalidation_rules_count"] = {"count": len(self._invalidation_rules)}
+        stats["registered_generators"] = {"count": len(self._key_generators)}
         return stats
     
     def clear(self) -> None:
@@ -446,13 +436,17 @@ class QueryCache:
         self._cache.clear()
 
 
-def cached_operation(cache: QueryCache, operation_name: str, ttl: Optional[float] = None):
+from typing import TypeVar, Callable, cast
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+def cached_operation(cache: QueryCache, operation_name: str, ttl: Optional[float] = None) -> Callable[[F], F]:
     """Decorator to automatically cache operation results."""
-    def decorator(func):
+    def decorator(func: F) -> F:
         from functools import wraps
         
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Try to get cached result
             cached_result = cache.get_cached_result(operation_name, *args, **kwargs)
             if cached_result is not None:
@@ -463,5 +457,5 @@ def cached_operation(cache: QueryCache, operation_name: str, ttl: Optional[float
             cache.cache_result(operation_name, result, ttl, *args, **kwargs)
             return result
         
-        return wrapper
+        return cast(F, wrapper)  # Ensure the return type matches the decorated function
     return decorator
