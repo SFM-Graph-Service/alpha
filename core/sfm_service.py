@@ -794,13 +794,14 @@ class SFMService:
             source_id = uuid.UUID(data["source_id"])
             target_id = uuid.UUID(data["target_id"])
             
-            # Acquire read locks on both entities to prevent concurrent modification
-            with self._lock_manager.lock_entity(source_id, LockType.READ) as source_lock:
-                with self._lock_manager.lock_entity(target_id, LockType.READ) as target_lock:
-                    # Referential integrity validation - ensure both endpoints exist
+            # Handle self-referencing relationships to avoid deadlock
+            if source_id == target_id:
+                # For self-referencing relationships, only acquire one lock
+                with self._lock_manager.lock_entity(source_id, LockType.READ) as entity_lock:
+                    # Referential integrity validation - ensure entity exists
                     if not self._validate_relationship_integrity(source_id, target_id):
                         raise ValidationError(
-                            f"Referential integrity violation: source {source_id} or target {target_id} does not exist"
+                            f"Referential integrity violation: entity {source_id} does not exist"
                         )
                     
                     kind = self._convert_to_relationship_kind(data["kind"])
@@ -810,27 +811,50 @@ class SFMService:
                         target_id=target_id,
                         kind=kind,
                         weight=data.get("weight", 1.0),
-                        meta=data.get("meta", {}),
+                        meta=data.get("meta", {})
                     )
-
+                    
                     result = self._relationship_repo.create(relationship)
-                    
-                    # Track operation in transaction if active
-                    if self._transaction_manager.is_in_transaction():
-                        self._transaction_manager.add_operation(
-                            operation_type="create_relationship",
-                            data={"relationship_id": str(result.id), "source_id": str(source_id), "target_id": str(target_id)},
-                            rollback_data={"relationship_id": str(result.id)},
-                            rollback_function=lambda data: self._rollback_create_relationship(data["relationship_id"])
-                        )
-                    
                     self._mark_dirty("create_relationship")
-
-                    logger.info(
-                        "Created relationship: %s --%s--> %s",
-                        source_id, kind.name, target_id
-                    )
                     return self._relationship_to_response(result)
+            else:
+                # For different entities, acquire locks on both to prevent concurrent modification
+                with self._lock_manager.lock_entity(source_id, LockType.READ) as source_lock:
+                    with self._lock_manager.lock_entity(target_id, LockType.READ) as target_lock:
+                        # Referential integrity validation - ensure both endpoints exist
+                        if not self._validate_relationship_integrity(source_id, target_id):
+                            raise ValidationError(
+                                f"Referential integrity violation: source {source_id} or target {target_id} does not exist"
+                            )
+                        
+                        kind = self._convert_to_relationship_kind(data["kind"])
+
+                        relationship = Relationship(
+                            source_id=source_id,
+                            target_id=target_id,
+                            kind=kind,
+                            weight=data.get("weight", 1.0),
+                            meta=data.get("meta", {}),
+                        )
+
+                        result = self._relationship_repo.create(relationship)
+                        
+                        # Track operation in transaction if active
+                        if self._transaction_manager.is_in_transaction():
+                            self._transaction_manager.add_operation(
+                                operation_type="create_relationship",
+                                data={"relationship_id": str(result.id), "source_id": str(source_id), "target_id": str(target_id)},
+                                rollback_data={"relationship_id": str(result.id)},
+                                rollback_function=lambda data: self._rollback_create_relationship(data["relationship_id"])
+                            )
+                        
+                        self._mark_dirty("create_relationship")
+
+                        logger.info(
+                            "Created relationship: %s --%s--> %s",
+                            source_id, kind.name, target_id
+                        )
+                        return self._relationship_to_response(result)
 
         except ValueError as e:
             logger.error("Failed to create relationship: %s", e)

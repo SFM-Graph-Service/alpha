@@ -248,11 +248,11 @@ class TestConcurrencyControl:
         
         with self.service._lock_manager.lock_entity(entity_id, LockType.READ):
             current_stats = self.service._lock_manager.get_lock_stats()
-            assert current_stats["total_locks_acquired"] == initial_stats["total_locks_acquired"] + 1
+            assert current_stats["locks_acquired"] == initial_stats["locks_acquired"] + 1
             assert current_stats["active_entity_locks"] >= 1
         
         final_stats = self.service._lock_manager.get_lock_stats()
-        assert final_stats["total_locks_released"] == initial_stats["total_locks_released"] + 1
+        assert final_stats["locks_released"] == initial_stats["locks_released"] + 1
     
     def test_relationship_creation_with_locking(self):
         """Test that relationship creation uses proper locking."""
@@ -315,9 +315,9 @@ class TestEnhancedMetrics:
             metrics = self.service._lock_manager.get_lock_stats()
             
             # Should have lock data
-            assert "total_locks_acquired" in metrics
+            assert "locks_acquired" in metrics
             assert "active_entity_locks" in metrics
-            assert "total_active_locks" in metrics
+            assert "locks_released" in metrics
 
 
 class TestErrorHandling:
@@ -368,6 +368,11 @@ class TestErrorHandling:
         # Acquire a write lock
         with self.service._lock_manager.lock_entity(entity_id, LockType.WRITE):
             # Try to acquire another write lock with short timeout
-            with pytest.raises(TimeoutError):
+            # Should raise TimeoutError when timeout occurs
+            with pytest.raises(TimeoutError) as exc_info:
                 with self.service._lock_manager.lock_entity(entity_id, LockType.WRITE, timeout=0.1):
                     pass
+            
+            # Verify the timeout error message contains expected information
+            assert "Could not acquire" in str(exc_info.value)
+            assert str(entity_id) in str(exc_info.value)

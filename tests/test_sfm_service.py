@@ -1017,14 +1017,17 @@ class TestSFMServiceEdgeCases(unittest.TestCase):
         """Test creating self-referencing relationship."""
         actor = self.service.create_actor(CreateActorRequest(name="Self Actor"))
         
-        # This should work - self-referencing relationships can be valid
+        # Self-referencing relationships should now work with the fixed lock manager
         response = self.service.create_relationship(CreateRelationshipRequest(
             source_id=actor.id,
             target_id=actor.id,
             kind="GOVERNS"
         ))
         
+        # Verify the relationship was created successfully
         self.assertEqual(response.source_id, response.target_id)
+        self.assertEqual(response.kind, "GOVERNS")
+        self.assertEqual(response.source_id, actor.id)
 
     def test_analysis_on_empty_graph(self):
         """Test analysis operations on empty graph."""

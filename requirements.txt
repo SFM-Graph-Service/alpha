@@ -14,4 +14,4 @@ requests
 pylint
 coverage
 bleach
-colonized
+cachetools
