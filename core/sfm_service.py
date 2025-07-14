@@ -71,6 +71,22 @@ from core.sfm_models import (
 )
 from core.sfm_enums import ResourceType, RelationshipKind
 from core.sfm_query import SFMQueryEngine, NetworkXSFMQueryEngine
+from core.exceptions import (
+    SFMError,
+    SFMValidationError,
+    SFMNotFoundError,
+    GraphOperationError,
+    NodeCreationError,
+    NodeUpdateError,
+    NodeDeleteError,
+    RelationshipValidationError,
+    QueryExecutionError,
+    ErrorContext,
+    ErrorCode,
+    create_not_found_error,
+    create_validation_error,
+    create_node_creation_error,
+)
 from core.security_validators import (
     validate_and_sanitize_node_data,
     SecurityValidationError,
@@ -125,9 +141,15 @@ __all__ = [
     'ServiceStatus',
     'ServiceHealth',
     'SFMServiceConfig',
-    'SFMServiceError',
-    'ValidationError',
-    'NotFoundError',
+    'SFMError',
+    'SFMValidationError',
+    'SFMNotFoundError',
+    'GraphOperationError',
+    'NodeCreationError',
+    'NodeUpdateError',
+    'NodeDeleteError',
+    'RelationshipValidationError',
+    'QueryExecutionError',
     'SFMService',
     'DEFAULT_PAGE_LIMIT',
     'DEFAULT_PAGE_OFFSET',
@@ -288,39 +310,6 @@ class SFMServiceConfig:
     query_timeout: int = DEFAULT_QUERY_TIMEOUT
 
 
-class SFMServiceError(Exception):
-    """Base exception for SFM Service operations."""
-
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "SFM_ERROR",
-        details: Optional[Dict[str, Any]] = None,
-    ):
-        self.message = message
-        self.error_code = error_code
-        self.details = details or {}
-        super().__init__(message)
-
-
-class ValidationError(SFMServiceError):
-    """Validation-related service error."""
-
-    def __init__(self, message: str, field: Optional[str] = None, value: Any = None):
-        super().__init__(message, "VALIDATION_ERROR", {"field": field, "value": value})
-
-
-class NotFoundError(SFMServiceError):
-    """Entity not found error."""
-
-    def __init__(self, entity_type: str, entity_id: str):
-        super().__init__(
-            f"{entity_type} with ID {entity_id} not found",
-            "NOT_FOUND",
-            {"entity_type": entity_type, "entity_id": entity_id},
-        )
-
-
 # ═══ MAIN SERVICE CLASS ═══
 
 
@@ -408,14 +397,18 @@ class SFMService:
                     f"Graph size ({stats.total_nodes}) exceeds maximum "
                     f"({self.config.max_graph_size})"
                 )
-                raise SFMServiceError(message, "GRAPH_SIZE_EXCEEDED")
+                raise SFMError(
+                    message,
+                    ErrorCode.GRAPH_SIZE_EXCEEDED,
+                    remediation="Consider pruning the graph or increasing the size limit"
+                )
 
     def _convert_to_resource_type(self, rtype_str: str) -> ResourceType:
         """Convert string to ResourceType enum."""
         try:
             return ResourceType[rtype_str.upper()]
         except KeyError as exc:
-            raise ValidationError(
+            raise SFMValidationError(
                 f"Invalid resource type: {rtype_str}", "rtype", rtype_str
             ) from exc
 
@@ -537,12 +530,12 @@ class SFMService:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
                 logger.warning("Security validation failed for actor creation: %s", e.message)
-                raise ValidationError(f"Security validation failed: {e.message}",
+                raise SFMValidationError(f"Security validation failed: {e.message}",
                                       e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
-                    raise ValidationError("Actor name is required", "name")
+                    raise SFMValidationError("Actor name is required", "name")
 
             actor = Actor(
                 label=data["name"],
@@ -571,13 +564,13 @@ class SFMService:
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to create actor: %s", e)
-            raise ValidationError(f"Invalid actor data: {str(e)}") from e
-        except SFMServiceError:
+            raise SFMValidationError(f"Invalid actor data: {str(e)}") from e
+        except SFMError:
             raise
         except Exception as e:
             logger.error("Failed to create actor: %s", e)
-            raise SFMServiceError(
-                f"Failed to create actor: {str(e)}", "CREATE_ACTOR_FAILED"
+            raise SFMError(
+                f"Failed to create actor: {str(e)}", ErrorCode.CREATE_ACTOR_FAILED
             ) from e
 
     @audit_operation(AuditOperationType.CREATE, entity_type="Institution")
@@ -599,12 +592,12 @@ class SFMService:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
                 logger.warning("Security validation failed for institution creation: %s", e.message)
-                raise ValidationError(f"Security validation failed: {e.message}",
+                raise SFMValidationError(f"Security validation failed: {e.message}",
                                       e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
-                    raise ValidationError("Institution name is required", "name")
+                    raise SFMValidationError("Institution name is required", "name")
 
             institution = Institution(
                 label=data["name"],
@@ -630,12 +623,12 @@ class SFMService:
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to create institution: %s", e)
-            raise ValidationError(f"Invalid institution data: {str(e)}") from e
-        except SFMServiceError:
+            raise SFMValidationError(f"Invalid institution data: {str(e)}") from e
+        except SFMError:
             raise
         except Exception as e:
             logger.error("Failed to create institution: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to create institution: {str(e)}", "CREATE_INSTITUTION_FAILED"
             ) from e
 
@@ -658,12 +651,12 @@ class SFMService:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
                 logger.warning("Security validation failed for policy creation: %s", e.message)
-                raise ValidationError(f"Security validation failed: {e.message}",
+                raise SFMValidationError(f"Security validation failed: {e.message}",
                                       e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
-                    raise ValidationError("Policy name is required", "name")
+                    raise SFMValidationError("Policy name is required", "name")
 
             policy = Policy(
                 label=data["name"],
@@ -692,12 +685,12 @@ class SFMService:
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to create policy: %s", e)
-            raise ValidationError(f"Invalid policy data: {str(e)}") from e
-        except SFMServiceError:
+            raise SFMValidationError(f"Invalid policy data: {str(e)}") from e
+        except SFMError:
             raise
         except Exception as e:
             logger.error("Failed to create policy: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to create policy: {str(e)}", "CREATE_POLICY_FAILED"
             ) from e
 
@@ -718,12 +711,12 @@ class SFMService:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
                 logger.warning("Security validation failed for resource creation: %s", e.message)
-                raise ValidationError(f"Security validation failed: {e.message}",
+                raise SFMValidationError(f"Security validation failed: {e.message}",
                                       e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
-                    raise ValidationError("Resource name is required", "name")
+                    raise SFMValidationError("Resource name is required", "name")
 
             rtype = self._convert_to_resource_type(data.get("rtype", "NATURAL"))
 
@@ -753,12 +746,12 @@ class SFMService:
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to create resource: %s", e)
-            raise ValidationError(f"Invalid resource data: {str(e)}") from e
-        except SFMServiceError:
+            raise SFMValidationError(f"Invalid resource data: {str(e)}") from e
+        except SFMError:
             raise
         except Exception as e:
             logger.error("Failed to create resource: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to create resource: {str(e)}", "CREATE_RESOURCE_FAILED"
             ) from e
 
@@ -787,9 +780,9 @@ class SFMService:
 
             if self.config.validation_enabled:
                 if not data.get("source_id") or not data.get("target_id"):
-                    raise ValidationError("Source and target IDs are required")
+                    raise SFMValidationError("Source and target IDs are required")
                 if not data.get("kind"):
-                    raise ValidationError("Relationship kind is required")
+                    raise SFMValidationError("Relationship kind is required")
 
             source_id = uuid.UUID(data["source_id"])
             target_id = uuid.UUID(data["target_id"])
@@ -800,7 +793,7 @@ class SFMService:
                 with self._lock_manager.lock_entity(source_id, LockType.READ) as entity_lock:
                     # Referential integrity validation - ensure entity exists
                     if not self._validate_relationship_integrity(source_id, target_id):
-                        raise ValidationError(
+                        raise SFMValidationError(
                             f"Referential integrity violation: entity {source_id} does not exist"
                         )
                     
@@ -823,7 +816,7 @@ class SFMService:
                     with self._lock_manager.lock_entity(target_id, LockType.READ) as target_lock:
                         # Referential integrity validation - ensure both endpoints exist
                         if not self._validate_relationship_integrity(source_id, target_id):
-                            raise ValidationError(
+                            raise SFMValidationError(
                                 f"Referential integrity violation: source {source_id} or target {target_id} does not exist"
                             )
                         
@@ -858,15 +851,15 @@ class SFMService:
 
         except ValueError as e:
             logger.error("Failed to create relationship: %s", e)
-            raise ValidationError(f"Invalid UUID format: {e}") from e
+            raise SFMValidationError(f"Invalid UUID format: {e}") from e
         except (TypeError, AttributeError) as e:
             logger.error("Failed to create relationship: %s", e)
-            raise ValidationError(f"Invalid relationship data: {str(e)}") from e
-        except SFMServiceError:
+            raise SFMValidationError(f"Invalid relationship data: {str(e)}") from e
+        except SFMError:
             raise
         except Exception as e:
             logger.error("Failed to create relationship: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to create relationship: {str(e)}", "CREATE_RELATIONSHIP_FAILED"
             ) from e
 
@@ -953,10 +946,10 @@ class SFMService:
             return self._relationship_to_response(rel)
 
         except ValueError as exc:
-            raise ValidationError(f"Invalid UUID format: {rel_id}") from exc
+            raise SFMValidationError(f"Invalid UUID format: {rel_id}") from exc
         except Exception as e:
             logger.error("Failed to get relationship %s: %s", rel_id, e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to retrieve relationship: {str(e)}", "GET_RELATIONSHIP_FAILED"
             ) from e
 
@@ -991,7 +984,7 @@ class SFMService:
                     try:
                         kind_enum = self._convert_to_relationship_kind(kind_str)
                         relationship_kind_enums.append(kind_enum)
-                    except ValidationError:
+                    except SFMValidationError:
                         logger.warning("Unknown relationship kind: %s", kind_str)
 
             # Use the query engine to find neighbors
@@ -1004,10 +997,10 @@ class SFMService:
             return [str(neighbor_id) for neighbor_id in neighbor_ids]
 
         except ValueError as exc:
-            raise ValidationError(f"Invalid UUID format: {node_id}") from exc
+            raise SFMValidationError(f"Invalid UUID format: {node_id}") from exc
         except Exception as e:
             logger.error("Failed to get neighbors for node %s: %s", node_id, e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to get node neighbors: {str(e)}", "GET_NODE_NEIGHBORS_FAILED"
             ) from e
 
@@ -1051,10 +1044,10 @@ class SFMService:
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to list nodes: %s", e)
-            raise ValidationError(f"Invalid parameters for listing nodes: {str(e)}") from e
+            raise SFMValidationError(f"Invalid parameters for listing nodes: {str(e)}") from e
         except Exception as e:
             logger.error("Failed to list nodes: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to list nodes: {str(e)}", "LIST_NODES_FAILED"
             ) from e
 
@@ -1081,10 +1074,10 @@ class SFMService:
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to list relationships: %s", e)
-            raise ValidationError(f"Invalid parameters for listing relationships: {str(e)}") from e
+            raise SFMValidationError(f"Invalid parameters for listing relationships: {str(e)}") from e
         except Exception as e:
             logger.error("Failed to list relationships: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to list relationships: {str(e)}", "LIST_RELATIONSHIPS_FAILED"
             ) from e
 
@@ -1159,7 +1152,7 @@ class SFMService:
 
         except Exception as e:
             logger.error("Failed to get statistics: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to get statistics: {str(e)}", "GET_STATISTICS_FAILED"
             ) from e
 
@@ -1197,7 +1190,7 @@ class SFMService:
 
         except Exception as e:
             logger.error("Failed to analyze centrality: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to analyze centrality: {str(e)}", "CENTRALITY_ANALYSIS_FAILED"
             ) from e
 
@@ -1207,7 +1200,7 @@ class SFMService:
             try:
                 return uuid.UUID(value)
             except ValueError as e:
-                raise ValidationError(f"Invalid UUID format: {value}") from e
+                raise SFMValidationError(f"Invalid UUID format: {value}") from e
         return value
 
     def _build_policy_impact_analysis(
@@ -1246,7 +1239,7 @@ class SFMService:
 
             # Check for error in impact data
             if "error" in impact_data:
-                raise NotFoundError("Policy", str(validated_policy_id))
+                raise SFMNotFoundError("Policy", str(validated_policy_id))
 
             # Build and return the analysis result
             return self._build_policy_impact_analysis(
@@ -1254,14 +1247,14 @@ class SFMService:
             )
 
         except nx.NodeNotFound as e:
-            raise NotFoundError("Policy", str(policy_id)) from e
-        except ValidationError:
+            raise SFMNotFoundError("Policy", str(policy_id)) from e
+        except SFMValidationError:
             raise
-        except (NotFoundError, SFMServiceError):
+        except (SFMNotFoundError, SFMError):
             raise
         except Exception as e:
             logger.error("Failed to analyze policy impact: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to analyze policy impact: {str(e)}",
                 "POLICY_IMPACT_ANALYSIS_FAILED",
             ) from e
@@ -1303,7 +1296,7 @@ class SFMService:
                     try:
                         kind_enum = self._convert_to_relationship_kind(kind_str)
                         relationship_kind_enums.append(kind_enum)
-                    except ValidationError:
+                    except SFMValidationError:
                         logger.warning("Unknown relationship kind: %s", kind_str)
 
             # Use the query engine to find the path
@@ -1319,12 +1312,12 @@ class SFMService:
             return [str(node_id) for node_id in path_ids]
 
         except ValueError as exc:
-            raise ValidationError("Invalid UUID format in path finding") from exc
+            raise SFMValidationError("Invalid UUID format in path finding") from exc
         except Exception as e:
             logger.error(
                 "Failed to find path between %s and %s: %s", source_id, target_id, e
             )
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to find shortest path: {str(e)}", "FIND_PATH_FAILED"
             ) from e
 
@@ -1373,7 +1366,7 @@ class SFMService:
 
         except Exception as e:
             logger.error("Failed to clear data: %s", e)
-            raise SFMServiceError(
+            raise SFMError(
                 f"Failed to clear data: {str(e)}", "CLEAR_DATA_FAILED"
             ) from e
 
@@ -1396,7 +1389,7 @@ class SFMService:
             except Exception as e:
                 logger.error(f"Bulk actor creation failed after {len(results)} successful operations: {e}")
                 # Transaction will automatically rollback all created actors
-                raise SFMServiceError(
+                raise SFMError(
                     f"Bulk actor creation failed: {str(e)}", "BULK_CREATE_ACTORS_FAILED"
                 ) from e
 

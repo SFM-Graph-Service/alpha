@@ -31,6 +31,21 @@ from core.sfm_models import (
 )
 
 from core.sfm_enums import ResourceType, InstitutionLayer, ValueCategory,RelationshipKind
+from core.exceptions import (
+    SFMError,
+    SFMValidationError,
+    SFMNotFoundError,
+    SFMIntegrityError,
+    NodeCreationError,
+    NodeUpdateError,
+    NodeDeleteError,
+    RelationshipValidationError,
+    DatabaseError,
+    ErrorContext,
+    create_not_found_error,
+    create_validation_error,
+    create_node_creation_error,
+)
 
 T = TypeVar("T", bound=Node)
 
@@ -157,7 +172,11 @@ class NetworkXSFMRepository(SFMRepository):
     def create_node(self, node: Node) -> Node:
         """Create a new node in the repository."""
         if node.id in self.graph:
-            raise ValueError(f"Node with ID {node.id} already exists")
+            raise NodeCreationError(
+                f"Node with ID {node.id} already exists",
+                node_type=type(node).__name__,
+                node_id=node.id
+            )
 
         # Add node to graph with its full data
         self.graph.add_node(node.id, data=node)
@@ -174,7 +193,10 @@ class NetworkXSFMRepository(SFMRepository):
     def update_node(self, node: Node) -> Node:
         """Update an existing node."""
         if node.id not in self.graph:
-            raise ValueError(f"Node with ID {node.id} does not exist")
+            raise SFMNotFoundError(
+                entity_type=type(node).__name__,
+                entity_id=node.id
+            )
 
         # Update node data in the graph
         self.graph.nodes[node.id]["data"] = node
@@ -207,14 +229,25 @@ class NetworkXSFMRepository(SFMRepository):
         """Create a new relationship in the repository."""
         # Verify source and target nodes exist
         if rel.source_id not in self.graph:
-            raise ValueError(f"Source node with ID {rel.source_id} does not exist")
+            raise SFMNotFoundError(
+                entity_type="Node",
+                entity_id=rel.source_id
+            )
         if rel.target_id not in self.graph:
-            raise ValueError(f"Target node with ID {rel.target_id} does not exist")
+            raise SFMNotFoundError(
+                entity_type="Node", 
+                entity_id=rel.target_id
+            )
 
         # Check if relationship already exists
         for _, _, key, data in self.graph.edges(data=True, keys=True):
             if key == rel.id:
-                raise ValueError(f"Relationship with ID {rel.id} already exists")
+                raise RelationshipValidationError(
+                    f"Relationship with ID {rel.id} already exists",
+                    source_id=rel.source_id,
+                    target_id=rel.target_id,
+                    relationship_kind=rel.kind.value if rel.kind else None
+                )
 
         # Add relationship to graph as an edge with its data
         self.graph.add_edge(rel.source_id, rel.target_id, key=rel.id, data=rel)
@@ -238,7 +271,10 @@ class NetworkXSFMRepository(SFMRepository):
                 self.graph[u][v][key]["data"] = rel
                 return rel
 
-        raise ValueError(f"Relationship with ID {rel.id} does not exist")
+        raise SFMNotFoundError(
+            entity_type="Relationship",
+            entity_id=rel.id
+        )
 
     def delete_relationship(self, rel_id: uuid.UUID) -> bool:
         """Delete a relationship by its ID."""
@@ -822,7 +858,7 @@ class SFMRepositoryFactory:
         if storage_type.lower() in ("networkx", "test"):
             return NetworkXSFMRepository()
         else:
-            raise ValueError(f"Unsupported storage type: {storage_type}")
+            raise SFMValidationError(f"Unsupported storage type: {storage_type}", "storage_type", storage_type)
 
     @staticmethod
     def create_actor_repository(storage_type: str = "networkx") -> ActorRepository:

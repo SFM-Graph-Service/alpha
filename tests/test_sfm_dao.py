@@ -11,6 +11,12 @@ import networkx as nx
 
 from core.sfm_models import *
 from core.sfm_enums import *
+from core.exceptions import (
+    NodeCreationError,
+    SFMNotFoundError,
+    RelationshipValidationError,
+    SFMValidationError,
+)
 from db.sfm_dao import (
     SFMRepository, NetworkXSFMRepository, SFMRepositoryFactory, TypedSFMRepository,
     ActorRepository, InstitutionRepository, PolicyRepository,
@@ -66,7 +72,7 @@ class TestNetworkXSFMRepositoryUnit(unittest.TestCase):
         self.assertTrue(self.actor1.id in self.repo.graph)
         
         # Test creating a duplicate node
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NodeCreationError):
             self.repo.create_node(self.actor1)
 
     def test_read_node(self):
@@ -96,7 +102,7 @@ class TestNetworkXSFMRepositoryUnit(unittest.TestCase):
         
         # Test updating non-existent node
         non_existent = Actor(label="Non-existent")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(SFMNotFoundError):
             self.repo.update_node(non_existent)
 
     def test_delete_node(self):
@@ -135,19 +141,19 @@ class TestNetworkXSFMRepositoryUnit(unittest.TestCase):
         
         # Test creating with missing source
         self.repo.delete_node(self.actor1.id)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(SFMNotFoundError):
             self.repo.create_relationship(self.relationship)
             
         # Restore actor1 and test with missing target
         self.repo.create_node(self.actor1)
         self.repo.delete_node(self.actor2.id)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(SFMNotFoundError):
             self.repo.create_relationship(self.relationship)
             
         # Test duplicate
         self.repo.create_node(self.actor2)
         self.repo.create_relationship(self.relationship)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(RelationshipValidationError):
             self.repo.create_relationship(self.relationship)
 
     def test_read_relationship(self):
@@ -185,7 +191,7 @@ class TestNetworkXSFMRepositoryUnit(unittest.TestCase):
             target_id=uuid.uuid4(),
             kind=RelationshipKind.GOVERNS
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(SFMNotFoundError):
             self.repo.update_relationship(non_existent)
 
     def test_delete_relationship(self):
@@ -502,7 +508,7 @@ class TestSFMRepositoryFactoryUnit(unittest.TestCase):
         self.assertIsInstance(nx_repo, NetworkXSFMRepository)
         
         # Test unsupported storage type
-        with self.assertRaises(ValueError):
+        with self.assertRaises(SFMValidationError):
             SFMRepositoryFactory.create_repository("unsupported_storage")
 
     def test_create_specialized_repositories(self):

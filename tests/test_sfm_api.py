@@ -20,9 +20,9 @@ from api.sfm_api import app, get_sfm_service_dependency
 from core.sfm_service import (
     SFMService,
     SFMServiceConfig,
-    SFMServiceError,
-    ValidationError,
-    NotFoundError,
+    SFMError,
+    SFMValidationError,
+    SFMNotFoundError,
     ServiceStatus,
     ServiceHealth,
     CreateActorRequest,
@@ -458,8 +458,8 @@ class TestSFMAPIErrorHandling(unittest.TestCase):
 
     def test_validation_error_handling(self):
         """Test handling of validation errors."""
-        # Mock service to raise ValidationError
-        validation_error = ValidationError(
+        # Mock service to raise SFMValidationError
+        validation_error = SFMValidationError(
             message="Invalid data provided",
             field="name",
             value=""
@@ -484,8 +484,8 @@ class TestSFMAPIErrorHandling(unittest.TestCase):
 
     def test_not_found_error_handling(self):
         """Test handling of not found errors."""
-        # Mock service to raise NotFoundError
-        not_found_error = NotFoundError(
+        # Mock service to raise SFMNotFoundError
+        not_found_error = SFMNotFoundError(
             entity_type="Actor",
             entity_id="123"
         )
@@ -499,14 +499,14 @@ class TestSFMAPIErrorHandling(unittest.TestCase):
         
         self.assertEqual(data["error"], "Not Found")
         self.assertEqual(data["message"], "Actor with ID 123 not found")
-        self.assertEqual(data["error_code"], "NOT_FOUND")
+        self.assertEqual(data["error_code"], "NOT_FOUND_ERROR")
         self.assertIn("details", data)
         self.assertIn("timestamp", data)
 
     def test_service_error_handling(self):
         """Test handling of general service errors."""
-        # Mock service to raise SFMServiceError
-        service_error = SFMServiceError(
+        # Mock service to raise SFMError
+        service_error = SFMError(
             message="Internal service error",
             error_code="SERVICE_ERROR",
             details={"operation": "create_actor"}
@@ -525,7 +525,7 @@ class TestSFMAPIErrorHandling(unittest.TestCase):
         
         self.assertEqual(data["error"], "Service Error")
         self.assertEqual(data["message"], "Internal service error")
-        self.assertEqual(data["error_code"], "SERVICE_ERROR")
+        self.assertEqual(data["error_code"], "SFM_ERROR")
         self.assertIn("details", data)
         self.assertIn("timestamp", data)
 
