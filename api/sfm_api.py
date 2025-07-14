@@ -806,7 +806,7 @@ async def get_config_status():
         logger.error(f"Error getting configuration status: {e}")
         return {
             "status": "error",
-            "message": str(e),
+            "message": "An internal error occurred while fetching the configuration status.",
             "timestamp": datetime.now().isoformat()
         }
 
@@ -834,7 +834,7 @@ async def reload_config():
         logger.error(f"Error reloading configuration: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to reload configuration: {str(e)}"
+            detail="An internal error occurred while reloading the configuration."
         )
 
 # ═══ STARTUP/SHUTDOWN EVENTS ═══
