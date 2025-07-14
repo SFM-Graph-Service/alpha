@@ -18,9 +18,9 @@ import json
 from core.sfm_service import (
     SFMService,
     SFMServiceConfig,
-    SFMServiceError,
-    ValidationError,
-    NotFoundError,
+    SFMError,
+    SFMValidationError,
+    SFMNotFoundError,
     ServiceStatus,
     ServiceHealth,
     CreateActorRequest,
@@ -260,34 +260,34 @@ class TestSFMServiceErrors(unittest.TestCase):
     """Test custom exception classes."""
 
     def test_sfm_service_error(self):
-        """Test SFMServiceError creation."""
-        error = SFMServiceError(
+        """Test SFMError creation."""
+        error = SFMError(
             "Test error message",
             "TEST_ERROR",
-            {"field": "value"}
+            details={"field": "value"}
         )
         
         self.assertEqual(error.message, "Test error message")
-        self.assertEqual(error.error_code, "TEST_ERROR")
+        self.assertEqual(error.error_code.value, "SFM_ERROR")
         self.assertEqual(error.details, {"field": "value"})
         self.assertEqual(str(error), "Test error message")
 
     def test_validation_error(self):
-        """Test ValidationError creation."""
-        error = ValidationError("Invalid field", "name", "")
+        """Test SFMValidationError creation."""
+        error = SFMValidationError("Invalid field", "name", "")
         
         self.assertEqual(error.message, "Invalid field")
-        self.assertEqual(error.error_code, "VALIDATION_ERROR")
+        self.assertEqual(error.error_code.value, "VALIDATION_ERROR")
         self.assertEqual(error.details["field"], "name")
         self.assertEqual(error.details["value"], "")
 
     def test_not_found_error(self):
-        """Test NotFoundError creation."""
+        """Test SFMNotFoundError creation."""
         entity_id = str(uuid.uuid4())
-        error = NotFoundError("Actor", entity_id)
+        error = SFMNotFoundError("Actor", entity_id)
         
         self.assertIn("not found", error.message)
-        self.assertEqual(error.error_code, "NOT_FOUND")
+        self.assertEqual(error.error_code.value, "NOT_FOUND_ERROR")
         self.assertEqual(error.details["entity_type"], "Actor")
         self.assertEqual(error.details["entity_id"], entity_id)
 
@@ -355,7 +355,7 @@ class TestSFMServiceUnit(unittest.TestCase):
 
     def test_convert_to_resource_type_invalid(self):
         """Test invalid resource type conversion."""
-        with self.assertRaises(ValidationError) as context:
+        with self.assertRaises(SFMValidationError) as context:
             self.service._convert_to_resource_type("INVALID_TYPE")
         
         self.assertIn("Invalid resource type", str(context.exception))
@@ -477,7 +477,7 @@ class TestSFMServiceUnit(unittest.TestCase):
         """Test actor creation with validation error."""
         request = CreateActorRequest(name="")  # Empty name should fail validation
         
-        with self.assertRaises((ValidationError, SFMServiceError)) as context:
+        with self.assertRaises((SFMValidationError, SFMError)) as context:
             self.service.create_actor(request)
         
         self.assertIn("label", str(context.exception).lower())
@@ -487,10 +487,10 @@ class TestSFMServiceUnit(unittest.TestCase):
         request = CreateActorRequest(name="Test Actor")
         self.service._actor_repo.create.side_effect = Exception("Database error")
         
-        with self.assertRaises(SFMServiceError) as context:
+        with self.assertRaises(SFMError) as context:
             self.service.create_actor(request)
         
-        self.assertEqual(context.exception.error_code, "CREATE_ACTOR_FAILED")
+        self.assertEqual(context.exception.error_code.value, "CREATE_ACTOR_FAILED")
 
     def test_create_institution_success(self):
         """Test successful institution creation."""
@@ -578,7 +578,7 @@ class TestSFMServiceUnit(unittest.TestCase):
             kind="GOVERNS"
         )
         
-        with self.assertRaises(ValidationError) as context:
+        with self.assertRaises(SFMValidationError) as context:
             self.service.create_relationship(request)
         
         self.assertIn("Invalid UUID format", str(context.exception))
@@ -1007,10 +1007,10 @@ class TestSFMServiceEdgeCases(unittest.TestCase):
     def test_create_entity_with_empty_strings(self):
         """Test creating entities with empty string values."""
         # Should fail validation for required name field
-        with self.assertRaises((ValidationError, SFMServiceError)):
+        with self.assertRaises((SFMValidationError, SFMError)):
             self.service.create_actor(CreateActorRequest(name=""))
         
-        with self.assertRaises((ValidationError, SFMServiceError)):
+        with self.assertRaises((SFMValidationError, SFMError)):
             self.service.create_institution(CreateInstitutionRequest(name=""))
 
     def test_create_relationship_with_same_source_target(self):
@@ -1064,7 +1064,7 @@ class TestSFMServiceEdgeCases(unittest.TestCase):
         """Test policy impact analysis with non-existent policy."""
         fake_policy_id = uuid.uuid4()
         
-        with self.assertRaises(NotFoundError):
+        with self.assertRaises(SFMNotFoundError):
             self.service.analyze_policy_impact(fake_policy_id)
 
     def test_large_graph_size_validation(self):
@@ -1079,10 +1079,10 @@ class TestSFMServiceEdgeCases(unittest.TestCase):
         service.create_actor(CreateActorRequest(name="Actor 2"))
         
         # This should fail due to size limit
-        with self.assertRaises(SFMServiceError) as context:
+        with self.assertRaises(SFMError) as context:
             service.create_actor(CreateActorRequest(name="Actor 3"))
         
-        self.assertEqual(context.exception.error_code, "GRAPH_SIZE_EXCEEDED")
+        self.assertEqual(context.exception.error_code.value, "GRAPH_SIZE_EXCEEDED")
 
     def test_pagination_edge_cases(self):
         """Test pagination with edge case parameters."""
@@ -1287,20 +1287,20 @@ class TestSFMServiceAdvanced(unittest.TestCase):
             path = self.service.find_shortest_path(institution.id, policy.id)
             if path:
                 self.assertGreaterEqual(len(path), 2)
-        except NotFoundError:
+        except SFMNotFoundError:
             # Path not found is acceptable for this test
             pass
 
     def test_error_recovery(self):
         """Test error handling and recovery scenarios."""
         # Test invalid UUID handling
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(SFMValidationError):
             fake_id = "invalid-uuid"
             # Test with policy impact analysis that validates UUIDs
             self.service.analyze_policy_impact(fake_id)
         
         # Test nonexistent entity retrieval
-        with self.assertRaises(NotFoundError):
+        with self.assertRaises(SFMNotFoundError):
             fake_id = str(uuid.uuid4())
             # Test with policy impact analysis for non-existent policy
             self.service.analyze_policy_impact(fake_id)

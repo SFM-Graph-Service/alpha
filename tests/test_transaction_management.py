@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 from core.sfm_service import SFMService, CreateActorRequest, CreatePolicyRequest, CreateRelationshipRequest
 from core.transaction_manager import TransactionStatus
 from core.lock_manager import LockType
-from core.sfm_service import ValidationError, SFMServiceError
+from core.sfm_service import SFMValidationError, SFMError
 from core.security_validators import disable_validation_rate_limiting
 
 
@@ -79,7 +79,7 @@ class TestTransactionManagement:
             ]
             
             # The bulk operation should fail and rollback all operations
-            with pytest.raises(SFMServiceError):
+            with pytest.raises(SFMError):
                 self.service.bulk_create_actors(requests)
             
             # Check that rollback was attempted
@@ -119,7 +119,7 @@ class TestDataIntegrity:
             kind="AFFECTS"
         )
         
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(SFMValidationError) as exc_info:
             self.service.create_relationship(request)
         
         assert "Referential integrity violation" in str(exc_info.value)

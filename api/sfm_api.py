@@ -31,10 +31,9 @@ from collections import defaultdict, deque
 from core.sfm_service import (
     SFMService,
     SFMServiceConfig,
-    SFMServiceError,
-    ValidationError,
-    SecurityValidationError,
-    NotFoundError,
+    SFMError,
+    SFMValidationError,
+    SFMNotFoundError,
     ServiceStatus,
     ServiceHealth,
     CreateActorRequest,
@@ -51,6 +50,13 @@ from core.sfm_service import (
     get_sfm_service,
     reset_sfm_service,
     quick_analysis,
+)
+from core.exceptions import (
+    APIError,
+    APIRequestError,
+    APIRateLimitError,
+    SecurityValidationError,
+    ErrorContext,
 )
 
 # Setup logging
@@ -126,58 +132,99 @@ def get_sfm_service_dependency() -> SFMService:
 
 # ═══ ERROR HANDLERS ═══
 
-@app.exception_handler(ValidationError)
-async def validation_error_handler(request, exc: ValidationError):
-    """Handle validation errors."""
+@app.exception_handler(SFMValidationError)
+async def validation_error_handler(request, exc: SFMValidationError):
+    """Handle validation errors with enhanced context."""
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={
             "error": "Validation Error",
             "message": exc.message,
-            "error_code": exc.error_code,
+            "error_code": exc.error_code.value,
             "details": exc.details,
+            "context": exc.context.to_dict(),
+            "remediation": exc.remediation,
             "timestamp": datetime.now().isoformat()
         }
     )
 
 @app.exception_handler(SecurityValidationError)
 async def security_validation_error_handler(request, exc: SecurityValidationError):
-    """Handle security validation errors."""
+    """Handle security validation errors with enhanced context."""
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={
             "error": "Security Validation Error",
             "message": exc.message,
-            "error_code": exc.error_code,
+            "error_code": exc.error_code.value,
             "details": exc.details,
+            "context": exc.context.to_dict(),
+            "remediation": exc.remediation,
             "timestamp": datetime.now().isoformat()
         }
     )
 
-@app.exception_handler(NotFoundError)
-async def not_found_error_handler(request, exc: NotFoundError):
-    """Handle not found errors."""
+@app.exception_handler(SFMNotFoundError)
+async def not_found_error_handler(request, exc: SFMNotFoundError):
+    """Handle not found errors with enhanced context."""
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={
             "error": "Not Found",
             "message": exc.message,
-            "error_code": exc.error_code,
+            "error_code": exc.error_code.value,
             "details": exc.details,
+            "context": exc.context.to_dict(),
+            "remediation": exc.remediation,
             "timestamp": datetime.now().isoformat()
         }
     )
 
-@app.exception_handler(SFMServiceError)
-async def sfm_service_error_handler(request, exc: SFMServiceError):
-    """Handle general SFM service errors."""
+@app.exception_handler(SFMError)
+async def sfm_service_error_handler(request, exc: SFMError):
+    """Handle general SFM service errors with enhanced context."""
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Service Error",
             "message": exc.message,
-            "error_code": exc.error_code,
+            "error_code": exc.error_code.value,
             "details": exc.details,
+            "context": exc.context.to_dict(),
+            "remediation": exc.remediation,
+            "timestamp": datetime.now().isoformat()
+        }
+    )
+
+@app.exception_handler(APIRateLimitError)
+async def rate_limit_error_handler(request, exc: APIRateLimitError):
+    """Handle rate limit errors."""
+    return JSONResponse(
+        status_code=exc.http_status_code,
+        content={
+            "error": "Rate Limit Exceeded",
+            "message": exc.message,
+            "error_code": exc.error_code.value,
+            "details": exc.details,
+            "context": exc.context.to_dict(),
+            "remediation": exc.remediation,
+            "timestamp": datetime.now().isoformat()
+        },
+        headers={"Retry-After": "60"}
+    )
+
+@app.exception_handler(APIRequestError)
+async def api_request_error_handler(request, exc: APIRequestError):
+    """Handle API request errors."""
+    return JSONResponse(
+        status_code=exc.http_status_code,
+        content={
+            "error": "Request Error",
+            "message": exc.message,
+            "error_code": exc.error_code.value,
+            "details": exc.details,
+            "context": exc.context.to_dict(),
+            "remediation": exc.remediation,
             "timestamp": datetime.now().isoformat()
         }
     )
