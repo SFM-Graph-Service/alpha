@@ -1,0 +1,53 @@
+# Staging environment configuration
+# Overrides for staging environment
+
+environment: staging
+debug: false
+
+# Database configuration for staging
+database:
+  host: staging-db.example.com
+  port: 5432
+  name: sfm_staging_db
+  username: sfm_staging_user
+  pool_size: 20
+  timeout: 30
+  ssl_mode: require
+  max_connections: 50
+
+# Cache configuration for staging
+cache:
+  backend: redis
+  host: staging-redis.example.com
+  port: 6379
+  ttl: 3600
+  max_size: 10000
+  db: 0
+
+# API configuration for staging
+api:
+  host: 0.0.0.0
+  port: 8000
+  debug: false
+  cors_origins:
+    - "https://staging.sfm.example.com"
+    - "https://staging-app.sfm.example.com"
+  rate_limit: "500/hour"
+  request_timeout: 30
+  max_request_size: 10485760
+
+# Logging configuration for staging
+logging:
+  level: INFO
+  format: json
+  file_enabled: true
+  console_enabled: true
+  file_path: /var/log/sfm/staging.log
+  rotation_size: 100MB
+  rotation_count: 10
+
+# Security configuration for staging
+security:
+  encryption_enabled: true
+  audit_enabled: true
+  session_timeout: 3600

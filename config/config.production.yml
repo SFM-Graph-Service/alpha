@@ -1,0 +1,53 @@
+# Production environment configuration
+# Overrides for production environment
+
+environment: production
+debug: false
+
+# Database configuration for production
+database:
+  host: prod-db-cluster.example.com
+  port: 5432
+  name: sfm_prod_db
+  username: sfm_prod_user
+  pool_size: 50
+  timeout: 60
+  ssl_mode: require
+  max_connections: 200
+
+# Cache configuration for production
+cache:
+  backend: redis
+  host: prod-redis-cluster.example.com
+  port: 6379
+  ttl: 3600
+  max_size: 100000
+  db: 0
+
+# API configuration for production
+api:
+  host: 0.0.0.0
+  port: 8000
+  debug: false
+  cors_origins:
+    - "https://sfm.example.com"
+    - "https://app.sfm.example.com"
+  rate_limit: "1000/hour"
+  request_timeout: 30
+  max_request_size: 10485760
+
+# Logging configuration for production
+logging:
+  level: WARNING
+  format: json
+  file_enabled: true
+  console_enabled: false
+  file_path: /var/log/sfm/production.log
+  rotation_size: 500MB
+  rotation_count: 30
+
+# Security configuration for production
+security:
+  encryption_enabled: true
+  audit_enabled: true
+  session_timeout: 1800  # 30 minutes
