@@ -427,7 +427,7 @@ class ConfigLoader:
                 if secret_value:
                     self._set_nested_value(config_dict, config_path, secret_value)
             except Exception as e:
-                logger.warning(f"Failed to load secret '{secret_key}': {e}")
+                logger.warning(f"Failed to load a secret. Details: {e}")
         
         return self._create_config_object(config_dict)
     
