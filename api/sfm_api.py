@@ -51,6 +51,14 @@ from core.sfm_service import (
     reset_sfm_service,
     quick_analysis,
 )
+
+# Import monitoring components
+from config.monitoring import load_monitoring_config_from_env
+from core.logging_config import configure_logging, get_logger
+from core.metrics import configure_metrics, MetricConfig
+from core.health_checker import get_health_checker, DatabaseHealthCheck, ServiceReadinessCheck
+from core.monitoring_middleware import create_monitoring_middleware
+from api.health import create_health_and_metrics_router
 from core.exceptions import (
     APIError,
     APIRequestError,
@@ -59,9 +67,22 @@ from core.exceptions import (
     ErrorContext,
 )
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Setup monitoring configuration
+monitoring_config = load_monitoring_config_from_env()
+
+# Configure logging
+configure_logging(monitoring_config.logging.to_dict())
+
+# Configure metrics
+configure_metrics(MetricConfig(
+    enabled=monitoring_config.metrics.enabled,
+    export_port=monitoring_config.metrics.export_port,
+    collection_interval=monitoring_config.metrics.collection_interval,
+    prometheus_enabled=monitoring_config.metrics.prometheus_enabled
+))
+
+# Setup logging with monitoring
+logger = get_logger(__name__)
 
 # Rate limiting configuration
 RATE_LIMIT_REQUESTS = 100  # requests per minute
@@ -123,6 +144,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add monitoring middleware using FastAPI's middleware approach
+from core.monitoring_middleware import MonitoringMiddleware
+app.add_middleware(MonitoringMiddleware, config=monitoring_config.middleware.to_dict())
+
+# Add health and metrics routes
+health_metrics_router = create_health_and_metrics_router()
+app.include_router(health_metrics_router)
 
 # ═══ DEPENDENCY INJECTION ═══
 
@@ -689,7 +718,19 @@ async def startup_event() -> None:
     service = get_sfm_service()
     health = service.get_health()
     
+    # Initialize health checks
+    health_checker = get_health_checker()
+    
+    # Add service-specific health checks
+    health_checker.add_check(
+        ServiceReadinessCheck(lambda: service),
+        include_in_startup=True,
+        include_in_liveness=True,
+        include_in_readiness=True
+    )
+    
     logger.info(f"SFM API ready - Backend: {health.backend}, Status: {health.status.value}")
+    logger.info("Monitoring and health checks initialized")
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
