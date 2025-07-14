@@ -100,6 +100,7 @@ from core.performance_metrics import (
     MetricsCollector, get_metrics_collector, timed_operation
 )
 from core.lock_manager import get_lock_manager, LockType
+from core.patterns.command import CommandManager, AddNodeCommand, AddRelationshipCommand
 from db.sfm_dao import (
     SFMRepositoryFactory,
     ActorRepository,
@@ -364,6 +365,7 @@ class SFMService:
         self._audit_logger = get_audit_logger()
         self._metrics_collector = get_metrics_collector()
         self._lock_manager = get_lock_manager()
+        self._command_manager = CommandManager()  # Add command manager
 
         logger.info(
             "SFM Service initialized with backend: %s", self.config.storage_backend
@@ -1559,6 +1561,45 @@ class SFMService:
         """Reset all collected metrics (for testing/maintenance)."""
         self._metrics_collector.reset_metrics()
         # Note: Audit history is retained for compliance
+
+    # ═══ COMMAND PATTERN SUPPORT ═══
+
+    def undo_last_operation(self) -> bool:
+        """Undo the last operation using the command pattern."""
+        return self._command_manager.undo()
+
+    def redo_last_operation(self) -> bool:
+        """Redo the last undone operation using the command pattern."""
+        return self._command_manager.redo()
+
+    def get_command_history(self) -> List[Dict[str, Any]]:
+        """Get the command history for undo/redo operations."""
+        return [
+            {
+                "command_id": str(metadata.command_id),
+                "command_type": metadata.command_type,
+                "description": metadata.description,
+                "timestamp": metadata.timestamp.isoformat(),
+                "executed": metadata.executed,
+                "undone": metadata.undone,
+                "execution_time_ms": metadata.execution_time_ms,
+                "error_message": metadata.error_message
+            }
+            for metadata in self._command_manager.get_history()
+            if metadata is not None
+        ]
+
+    def can_undo(self) -> bool:
+        """Check if there are operations that can be undone."""
+        return self._command_manager.can_undo()
+
+    def can_redo(self) -> bool:
+        """Check if there are operations that can be redone."""
+        return self._command_manager.can_redo()
+
+    def get_command_statistics(self) -> Dict[str, Any]:
+        """Get statistics about command execution."""
+        return self._command_manager.get_statistics()
 
     # ═══ DATA INTEGRITY VALIDATION ═══
     

@@ -31,6 +31,7 @@ from core.metadata_models import ModelMetadata, ValidationRule
 from core.sfm_enums import EnumValidator
 from core.memory_management import MemoryMonitor, MemoryUsageStats, EvictionStrategy, EvictableGraph
 from core.advanced_caching import QueryCache
+from core.patterns.observer import GraphObservable
 from core.performance_metrics import timed_operation
 
 # Set up logger for lazy loading operations
@@ -104,7 +105,7 @@ class NetworkMetrics(Node):
 
 
 @dataclass
-class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
+class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-instance-attributes
     """A complete Social Fabric Matrix representation with advanced performance optimizations."""
 
     id: uuid.UUID = field(default_factory=uuid.uuid4)
@@ -177,6 +178,9 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
 
     def __post_init__(self):
         """Initialize performance optimizations after dataclass initialization."""
+        # Initialize GraphObservable
+        GraphObservable.__init__(self)
+        
         if self._enable_memory_management:
             self._memory_monitor = MemoryMonitor(
                 memory_limit_mb=self._memory_limit_mb,
@@ -261,6 +265,9 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
         if self._enable_advanced_caching and hasattr(self, '_query_cache') and self._query_cache:
             self._query_cache.invalidate_on_event('node_added', node_id=self._get_node_id_for_cache(node.id))  # type: ignore[arg-type]
 
+        # Observer pattern: Notify observers of node addition
+        self._notify_node_added(node)
+
         return node
 
     @timed_operation("add_relationship")
@@ -291,6 +298,9 @@ class SFMGraph(EvictableGraph):  # pylint: disable=too-many-instance-attributes
             self._query_cache.invalidate_on_event('relationship_added', 
                                                source_id=self._get_node_id_for_cache(relationship.source_id),
                                                target_id=self._get_node_id_for_cache(relationship.target_id))
+
+        # Observer pattern: Notify observers of relationship addition
+        self._notify_relationship_added(relationship)
 
         return relationship
 

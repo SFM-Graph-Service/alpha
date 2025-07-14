@@ -21,6 +21,7 @@ from core.sfm_models import (
     SFMGraph,
 )
 from core.sfm_enums import ResourceType, FlowNature, RelationshipKind
+from core.patterns.strategy import StrategyManager, CentralityAnalyzer
 
 # Public API
 __all__ = [
@@ -247,6 +248,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
     def __init__(self, graph: SFMGraph):
         super().__init__(graph)
         self.nx_graph = self._build_networkx_graph()
+        self.strategy_manager = StrategyManager()
+        self.centrality_analyzer = CentralityAnalyzer(self.strategy_manager)
 
     def _build_networkx_graph(self) -> nx.MultiDiGraph:
         """Convert SFMGraph to NetworkX graph for analysis."""
@@ -273,23 +276,10 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
     def get_node_centrality(
         self, node_id: uuid.UUID, centrality_type: str = "betweenness"
     ) -> float:
-        """Calculate centrality measures for a node."""
-        if centrality_type == "betweenness":
-            centrality = nx.betweenness_centrality(self.nx_graph)
-        elif centrality_type == "closeness":
-            centrality = nx.closeness_centrality(self.nx_graph)
-        elif centrality_type == "degree":
-            centrality = nx.degree_centrality(self.nx_graph)
-        elif centrality_type == "eigenvector":
-            try:
-                centrality = nx.eigenvector_centrality(self.nx_graph, max_iter=1000)
-            except nx.NetworkXError:
-                # Fallback for convergence issues
-                centrality = nx.degree_centrality(self.nx_graph)
-        else:
-            raise ValueError(f"Unsupported centrality type: {centrality_type}")
-
-        return centrality.get(node_id, 0.0)
+        """Calculate centrality measures for a node using strategy pattern."""
+        return self.centrality_analyzer.calculate_centrality(
+            self.nx_graph, node_id, centrality_type
+        )
 
     def get_most_central_nodes(
         self,
@@ -297,31 +287,21 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         centrality_type: str = "betweenness",
         limit: int = 10,
     ) -> List[Tuple[uuid.UUID, float]]:
-        """Get the most central nodes by type."""
-        # Calculate centrality for all nodes
-        if centrality_type == "betweenness":
-            centrality = nx.betweenness_centrality(self.nx_graph)
-        elif centrality_type == "closeness":
-            centrality = nx.closeness_centrality(self.nx_graph)
-        elif centrality_type == "degree":
-            centrality = nx.degree_centrality(self.nx_graph)
-        elif centrality_type == "eigenvector":
-            try:
-                centrality = nx.eigenvector_centrality(self.nx_graph, max_iter=1000)
-            except nx.NetworkXError:
-                centrality = nx.degree_centrality(self.nx_graph)
-        else:
-            raise ValueError(f"Unsupported centrality type: {centrality_type}")
+        """Get the most central nodes by type using strategy pattern."""
+        # Calculate centrality for all nodes using strategy
+        all_centralities = self.centrality_analyzer.calculate_all_centralities(
+            self.nx_graph, centrality_type
+        )
 
         # Filter by node type if specified
         if node_type:
             filtered_centrality = {
                 node_id: score
-                for node_id, score in centrality.items()
+                for node_id, score in all_centralities.items()
                 if isinstance(self.nx_graph.nodes[node_id]["data"], node_type)
             }
         else:
-            filtered_centrality = centrality
+            filtered_centrality = all_centralities
 
         # Sort and return top nodes
         sorted_nodes = sorted(
