@@ -14,14 +14,33 @@ Features:
 
 import time
 import threading
+import pickle
+import hashlib
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any, Callable
 from enum import Enum
+from functools import wraps
 
 import logging
 logger = logging.getLogger(__name__)
+
+# Optional Redis import - gracefully handle if not available
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    logger.warning("Redis not available - RedisCache will be disabled")
+
+# Optional Prometheus metrics import
+try:
+    from prometheus_client import Counter, Gauge, Histogram
+    PROMETHEUS_AVAILABLE = True
+except ImportError:
+    PROMETHEUS_AVAILABLE = False
+    logger.info("Prometheus client not available - metrics will be disabled")
 
 
 class CacheType(Enum):
@@ -289,6 +308,108 @@ class TTLMemoryCache(CacheBackend):
             return list(self._cache.keys())
 
 
+class RedisCache(CacheBackend):
+    """Redis-based cache backend with persistence."""
+    
+    def __init__(self, name: str, redis_client: Optional[Any] = None, host: str = 'localhost', 
+                 port: int = 6379, db: int = 0, password: Optional[str] = None, 
+                 max_size: int = 10000, default_ttl: float = 3600):
+        super().__init__(name, max_size)
+        self.default_ttl = default_ttl
+        
+        if not REDIS_AVAILABLE:
+            raise ImportError("Redis is not available. Install redis-py to use RedisCache")
+        
+        if redis_client:
+            self.redis = redis_client
+        else:
+            self.redis = redis.Redis(host=host, port=port, db=db, password=password, decode_responses=False)
+        
+        # Test connection
+        try:
+            self.redis.ping()
+            logger.info(f"Redis cache '{name}' connected successfully")
+        except Exception as e:
+            logger.error(f"Failed to connect to Redis: {e}")
+            raise
+    
+    def _make_key(self, key: str) -> str:
+        """Create a namespaced key for this cache instance."""
+        return f"{self.name}:{key}"
+    
+    def get(self, key: str) -> Optional[Any]:
+        with self._lock:
+            try:
+                namespaced_key = self._make_key(key)
+                data = self.redis.get(namespaced_key)
+                if data:
+                    value = pickle.loads(data)
+                    self.stats.record_hit()
+                    return value
+                else:
+                    self.stats.record_miss()
+                    return None
+            except Exception as e:
+                logger.error(f"Redis get error for key {key}: {e}")
+                self.stats.record_miss()
+                return None
+    
+    def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
+        with self._lock:
+            try:
+                namespaced_key = self._make_key(key)
+                data = pickle.dumps(value)
+                effective_ttl = ttl or self.default_ttl
+                self.redis.setex(namespaced_key, int(effective_ttl), data)
+            except Exception as e:
+                logger.error(f"Redis set error for key {key}: {e}")
+    
+    def delete(self, key: str) -> bool:
+        with self._lock:
+            try:
+                namespaced_key = self._make_key(key)
+                return bool(self.redis.delete(namespaced_key))
+            except Exception as e:
+                logger.error(f"Redis delete error for key {key}: {e}")
+                return False
+    
+    def clear(self) -> None:
+        with self._lock:
+            try:
+                # Delete all keys with this cache's namespace
+                pattern = f"{self.name}:*"
+                keys = self.redis.keys(pattern)
+                if keys:
+                    self.redis.delete(*keys)
+            except Exception as e:
+                logger.error(f"Redis clear error: {e}")
+    
+    def keys(self) -> List[str]:
+        with self._lock:
+            try:
+                pattern = f"{self.name}:*"
+                redis_keys = self.redis.keys(pattern)
+                # Remove namespace prefix from keys
+                return [key.decode('utf-8')[len(self.name) + 1:] for key in redis_keys]
+            except Exception as e:
+                logger.error(f"Redis keys error: {e}")
+                return []
+    
+    def delete_pattern(self, pattern: str) -> int:
+        """Delete keys matching a pattern."""
+        with self._lock:
+            try:
+                # Add namespace to pattern
+                namespaced_pattern = f"{self.name}:{pattern}"
+                keys = self.redis.keys(namespaced_pattern)
+                if keys:
+                    return self.redis.delete(*keys)
+                return 0
+            except Exception as e:
+                logger.error(f"Redis delete_pattern error: {e}")
+                return 0
+
+
 class MultiLevelCache:
     """Multi-level cache with fallback and intelligent promotion."""
     
@@ -352,9 +473,10 @@ class MultiLevelCache:
 class QueryCache:
     """Specialized cache for query results with intelligent invalidation."""
     
-    def __init__(self, max_size: int = 10000):
+    def __init__(self, max_size: int = 10000, name: str = "query_cache"):
         # Multi-level cache setup
-        self._cache = MultiLevelCache("query_cache")
+        self.name = name
+        self._cache = MultiLevelCache(name)
         
         # Level 1: Fast memory cache for recent queries
         self._cache.add_level(MemoryCache("recent_queries", max_size=1000))
@@ -436,9 +558,241 @@ class QueryCache:
         self._cache.clear()
 
 
-from typing import TypeVar, Callable, cast
+class CacheWarmer:
+    """Cache warming system for pre-populating frequently accessed data."""
+    
+    def __init__(self, cache_manager: QueryCache, graph_instance: Optional[Any] = None):
+        self.cache = cache_manager
+        self.graph = graph_instance
+        self._warming_strategies: Dict[str, Callable[[], None]] = {}
+        self._lock = threading.RLock()
+    
+    def register_warming_strategy(self, name: str, strategy: Callable[[], None]) -> None:
+        """Register a cache warming strategy."""
+        with self._lock:
+            self._warming_strategies[name] = strategy
+    
+    def warm_cache(self, strategy_name: Optional[str] = None) -> None:
+        """Warm cache using specified strategy or all strategies."""
+        with self._lock:
+            if strategy_name:
+                if strategy_name in self._warming_strategies:
+                    try:
+                        self._warming_strategies[strategy_name]()
+                        logger.info(f"Cache warmed using strategy: {strategy_name}")
+                    except Exception as e:
+                        logger.error(f"Error warming cache with strategy {strategy_name}: {e}")
+                else:
+                    logger.warning(f"Warming strategy not found: {strategy_name}")
+            else:
+                # Warm using all strategies
+                for name, strategy in self._warming_strategies.items():
+                    try:
+                        strategy()
+                        logger.info(f"Cache warmed using strategy: {name}")
+                    except Exception as e:
+                        logger.error(f"Error warming cache with strategy {name}: {e}")
+    
+    def warm_frequently_accessed_nodes(self, node_ids: List[str]) -> None:
+        """Warm cache for frequently accessed nodes."""
+        if not self.graph:
+            logger.warning("No graph instance available for cache warming")
+            return
+        
+        for node_id in node_ids:
+            try:
+                # Warm node relationships
+                if hasattr(self.graph, 'get_node_relationships'):
+                    self.graph.get_node_relationships(node_id)
+                
+                # Warm node data
+                if hasattr(self.graph, 'get_node_by_id'):
+                    self.graph.get_node_by_id(node_id)
+                    
+            except Exception as e:
+                logger.error(f"Error warming cache for node {node_id}: {e}")
+    
+    def warm_common_queries(self) -> None:
+        """Warm cache for common query patterns."""
+        if not self.graph:
+            logger.warning("No graph instance available for cache warming")
+            return
+        
+        try:
+            # Warm common graph statistics
+            if hasattr(self.graph, 'get_node_count'):
+                self.graph.get_node_count()
+            
+            if hasattr(self.graph, 'get_relationship_count'):
+                self.graph.get_relationship_count()
+                
+        except Exception as e:
+            logger.error(f"Error warming common queries: {e}")
+    
+    def schedule_warming(self, interval_seconds: int = 3600) -> None:
+        """Schedule periodic cache warming."""
+        import threading
+        import time
+        
+        def _warming_loop():
+            while True:
+                time.sleep(interval_seconds)
+                self.warm_cache()
+        
+        warming_thread = threading.Thread(target=_warming_loop, daemon=True)
+        warming_thread.start()
+        logger.info(f"Cache warming scheduled every {interval_seconds} seconds")
 
+
+class CacheMetrics:
+    """Prometheus metrics for cache monitoring."""
+    
+    def __init__(self, enabled: bool = True):
+        self.enabled = enabled and PROMETHEUS_AVAILABLE
+        
+        if self.enabled:
+            self.cache_hits = Counter('cache_hits_total', 'Total cache hits', ['cache_name', 'cache_type'])
+            self.cache_misses = Counter('cache_misses_total', 'Total cache misses', ['cache_name', 'cache_type'])
+            self.cache_hit_rate = Gauge('cache_hit_rate', 'Cache hit rate', ['cache_name', 'cache_type'])
+            self.cache_size = Gauge('cache_size_bytes', 'Cache size in bytes', ['cache_name', 'cache_type'])
+            self.cache_operations = Counter('cache_operations_total', 'Cache operations', ['operation', 'cache_name'])
+            self.cache_evictions = Counter('cache_evictions_total', 'Cache evictions', ['cache_name', 'cache_type'])
+            self.cache_response_time = Histogram('cache_response_time_seconds', 'Cache response time', ['cache_name', 'operation'])
+        else:
+            logger.info("Prometheus metrics disabled or not available")
+    
+    def record_hit(self, cache_name: str, cache_type: str) -> None:
+        """Record a cache hit."""
+        if self.enabled:
+            self.cache_hits.labels(cache_name=cache_name, cache_type=cache_type).inc()
+    
+    def record_miss(self, cache_name: str, cache_type: str) -> None:
+        """Record a cache miss."""
+        if self.enabled:
+            self.cache_misses.labels(cache_name=cache_name, cache_type=cache_type).inc()
+    
+    def record_eviction(self, cache_name: str, cache_type: str) -> None:
+        """Record a cache eviction."""
+        if self.enabled:
+            self.cache_evictions.labels(cache_name=cache_name, cache_type=cache_type).inc()
+    
+    def update_hit_rate(self, cache_name: str, cache_type: str, hit_rate: float) -> None:
+        """Update cache hit rate."""
+        if self.enabled:
+            self.cache_hit_rate.labels(cache_name=cache_name, cache_type=cache_type).set(hit_rate)
+    
+    def update_size(self, cache_name: str, cache_type: str, size_bytes: int) -> None:
+        """Update cache size."""
+        if self.enabled:
+            self.cache_size.labels(cache_name=cache_name, cache_type=cache_type).set(size_bytes)
+    
+    def record_operation(self, operation: str, cache_name: str) -> None:
+        """Record a cache operation."""
+        if self.enabled:
+            self.cache_operations.labels(operation=operation, cache_name=cache_name).inc()
+    
+    def time_operation(self, cache_name: str, operation: str):
+        """Context manager for timing cache operations."""
+        if self.enabled:
+            return self.cache_response_time.labels(cache_name=cache_name, operation=operation).time()
+        else:
+            from contextlib import nullcontext
+            return nullcontext()
+
+
+# Global cache metrics instance
+cache_metrics = CacheMetrics()
+
+# Type variable for function decorators
+from typing import TypeVar, Callable, cast
 F = TypeVar("F", bound=Callable[..., Any])
+
+
+def cached(ttl: int = 3600, cache_key_func: Optional[Callable[..., str]] = None, 
+          invalidate_on: Optional[List[str]] = None, cache_instance: Optional[QueryCache] = None) -> Callable[[F], F]:
+    """Enhanced cache decorator with configurable options."""
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # Use provided cache instance or create a default one
+            cache = cache_instance or QueryCache()
+            
+            # Generate cache key
+            if cache_key_func:
+                cache_key = cache_key_func(*args, **kwargs)
+            else:
+                # Create a hash-based key for complex arguments
+                key_data = f"{func.__name__}:{str(args)}:{str(sorted(kwargs.items()))}"
+                cache_key = f"{func.__name__}:{hashlib.md5(key_data.encode()).hexdigest()}"
+            
+            # Try to get from cache
+            with cache_metrics.time_operation(cache.name, "get"):
+                cached_result = cache.get_cached_result(func.__name__, cache_key)
+                if cached_result is not None:
+                    cache_metrics.record_hit(cache.name, "decorator")
+                    return cached_result
+            
+            # Execute function and cache result
+            with cache_metrics.time_operation(cache.name, "set"):
+                result = func(*args, **kwargs)
+                cache.cache_result(func.__name__, result, ttl, cache_key)
+                cache_metrics.record_miss(cache.name, "decorator")
+                return result
+        
+        # Add cache invalidation method to the wrapper
+        def _invalidate_cache():
+            cache = cache_instance or QueryCache()
+            cache.delete_pattern(f"{func.__name__}:*")
+        
+        wrapper._cache_invalidate = _invalidate_cache
+        return wrapper
+    return decorator
+
+
+# Global cache configuration
+@dataclass
+class CacheConfig:
+    """Configuration for cache settings."""
+    default_ttl: int = 3600
+    memory_cache_size: int = 1000
+    redis_cache_size: int = 10000
+    enable_redis: bool = False
+    redis_host: str = 'localhost'
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: Optional[str] = None
+    enable_metrics: bool = True
+    warming_interval: int = 3600
+    
+    @classmethod
+    def from_dict(cls, config_dict: Dict[str, Any]) -> 'CacheConfig':
+        """Create config from dictionary."""
+        return cls(**{k: v for k, v in config_dict.items() if hasattr(cls, k)})
+
+
+def create_cache_manager(config: CacheConfig) -> QueryCache:
+    """Factory function to create configured cache manager."""
+    cache_manager = QueryCache(max_size=config.memory_cache_size)
+    
+    # Configure cache levels based on config
+    if config.enable_redis and REDIS_AVAILABLE:
+        try:
+            redis_cache = RedisCache(
+                name="redis_cache",
+                host=config.redis_host,
+                port=config.redis_port,
+                db=config.redis_db,
+                password=config.redis_password,
+                max_size=config.redis_cache_size,
+                default_ttl=config.default_ttl
+            )
+            cache_manager._cache.add_level(redis_cache)
+            logger.info("Redis cache layer added to cache manager")
+        except Exception as e:
+            logger.error(f"Failed to initialize Redis cache: {e}")
+    
+    return cache_manager
+
 
 def cached_operation(cache: QueryCache, operation_name: str, ttl: Optional[float] = None) -> Callable[[F], F]:
     """Decorator to automatically cache operation results."""
