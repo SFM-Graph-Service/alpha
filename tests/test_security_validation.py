@@ -25,7 +25,7 @@ from core.security_validators import (
     MAX_METADATA_KEYS,
     MAX_METADATA_VALUE_LENGTH,
 )
-from core.sfm_service import SFMService, ValidationError, SFMServiceError
+from core.sfm_service import SFMService, SFMValidationError, SFMError
 
 
 class TestSecurityValidators(unittest.TestCase):
@@ -221,7 +221,7 @@ class TestSFMServiceSecurityIntegration(unittest.TestCase):
             "meta": {}
         }
         
-        with self.assertRaises((ValidationError, SFMServiceError)) as context:
+        with self.assertRaises((SFMValidationError, SFMError)) as context:
             self.service.create_actor(dangerous_data)
         
         self.assertIn("Input contains potentially dangerous content", str(context.exception))
@@ -234,7 +234,7 @@ class TestSFMServiceSecurityIntegration(unittest.TestCase):
             "meta": {}
         }
         
-        with self.assertRaises((ValidationError, SFMServiceError)) as context:
+        with self.assertRaises((SFMValidationError, SFMError)) as context:
             self.service.create_actor(long_data)
         
         self.assertIn("String too long", str(context.exception))
@@ -249,7 +249,7 @@ class TestSFMServiceSecurityIntegration(unittest.TestCase):
             }
         }
         
-        with self.assertRaises((ValidationError, SFMServiceError)) as context:
+        with self.assertRaises((SFMValidationError, SFMError)) as context:
             self.service.create_actor(dangerous_data)
         
         self.assertIn("Input contains potentially dangerous content", str(context.exception))
@@ -262,7 +262,7 @@ class TestSFMServiceSecurityIntegration(unittest.TestCase):
             "meta": {}
         }
         
-        with self.assertRaises((ValidationError, SFMServiceError)) as context:
+        with self.assertRaises((SFMValidationError, SFMError)) as context:
             self.service.create_institution(dangerous_data)
         
         self.assertIn("Input contains potentially dangerous content", str(context.exception))
@@ -275,7 +275,7 @@ class TestSFMServiceSecurityIntegration(unittest.TestCase):
             "meta": {}
         }
         
-        with self.assertRaises((ValidationError, SFMServiceError)) as context:
+        with self.assertRaises((SFMValidationError, SFMError)) as context:
             self.service.create_policy(dangerous_data)
         
         self.assertIn("Input contains potentially dangerous content", str(context.exception))
@@ -288,7 +288,7 @@ class TestSFMServiceSecurityIntegration(unittest.TestCase):
             "meta": {}
         }
         
-        with self.assertRaises((ValidationError, SFMServiceError)) as context:
+        with self.assertRaises((SFMValidationError, SFMError)) as context:
             self.service.create_resource(dangerous_data)
         
         self.assertIn("Input contains potentially dangerous content", str(context.exception))

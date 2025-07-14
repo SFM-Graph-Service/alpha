@@ -12,7 +12,7 @@ from collections import deque, defaultdict
 
 from fastapi.testclient import TestClient
 from api.sfm_api import app, check_rate_limit, rate_limit_storage, RATE_LIMIT_REQUESTS
-from core.sfm_service import ValidationError, SFMServiceError
+from core.sfm_service import SFMValidationError, SFMError
 
 
 class TestAPIRateLimiting(unittest.TestCase):
@@ -98,7 +98,7 @@ class TestAPISecurityIntegration(unittest.TestCase):
         """Test creating actor with dangerous input through API."""
         # Mock service to raise security validation error
         mock_service = MagicMock()
-        mock_service.create_actor.side_effect = SFMServiceError("Failed to create actor: Input contains potentially dangerous content")
+        mock_service.create_actor.side_effect = SFMError("Failed to create actor: Input contains potentially dangerous content")
         mock_get_service.return_value = mock_service
         
         # Attempt to create actor with dangerous input
@@ -183,7 +183,7 @@ class TestAPIValidationErrorHandling(unittest.TestCase):
         """Test proper handling of validation errors."""
         # Mock service to raise validation error
         mock_service = MagicMock()
-        mock_service.create_actor.side_effect = ValidationError("Actor name is required", "name")
+        mock_service.create_actor.side_effect = SFMValidationError("Actor name is required", "name")
         mock_get_service.return_value = mock_service
         
         response = self.client.post("/actors", json={"name": ""})

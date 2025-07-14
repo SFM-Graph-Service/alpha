@@ -125,6 +125,10 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Node)  # Generic type for Node entities
 
+# Backward compatibility alias
+ValidationError = SFMValidationError
+SFMServiceError = SFMError
+
 # Public API
 __all__ = [
     # DTOs
@@ -143,6 +147,8 @@ __all__ = [
     'SFMServiceConfig',
     'SFMError',
     'SFMValidationError',
+    'ValidationError',  # Backward compatibility alias
+    'SFMServiceError',  # Backward compatibility alias
     'SFMNotFoundError',
     'GraphOperationError',
     'NodeCreationError',
