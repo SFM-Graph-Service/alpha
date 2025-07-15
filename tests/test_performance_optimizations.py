@@ -79,10 +79,16 @@ class TestPerformanceOptimizations(unittest.TestCase):
         self.assertEqual(len(rels_first), len(rels_second))
         self.assertEqual(rels_first, rels_second)
         
-        # Second access should be faster (cached)
+        # Verify that cache is actually populated after the first access
+        self.assertIn(test_node_id, self.graph._relationship_cache,
+                      "Cache should be populated after first access")
+        
+        # Second access should be faster (cached) with a small tolerance for timing variations
+        # Allow a small tolerance (1ms) to account for system timing variations
+        tolerance = 0.001  # 1ms tolerance
         self.assertLessEqual(
-            second_access_time, first_access_time,
-            f"Cached access ({second_access_time:.4f}s) should be <= first access ({first_access_time:.4f}s)"
+            second_access_time, first_access_time + tolerance,
+            f"Cached access ({second_access_time:.4f}s) should be <= first access ({first_access_time:.4f}s) + tolerance ({tolerance:.4f}s)"
         )
 
     def test_cache_size_management(self):
