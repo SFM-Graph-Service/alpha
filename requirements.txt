@@ -18,3 +18,9 @@ cachetools
 redis
 prometheus-client
 PyYAML
+# Security dependencies
+python-jose[cryptography]
+python-multipart
+passlib[bcrypt]
+slowapi
+cryptography

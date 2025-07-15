@@ -26,6 +26,8 @@ from datetime import datetime, timedelta
 import logging
 import time
 from collections import defaultdict, deque
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Import SFM Service and related classes
 from core.sfm_service import (
@@ -66,6 +68,26 @@ from core.exceptions import (
     APIRateLimitError,
     SecurityValidationError,
     ErrorContext,
+)
+# Import security features
+from core.security import (
+    security_config,
+    auth_manager,
+    input_validator,
+    security_middleware,
+    limiter,
+    get_current_user,
+    require_permission,
+    require_role,
+    validate_input,
+    rate_limit,
+    Role,
+    Permission,
+    User,
+    UserCreate,
+    UserLogin,
+    Token,
+    SECURITY_HEADERS
 )
 
 # Setup monitoring configuration first
@@ -198,6 +220,16 @@ app.add_middleware(
 from core.monitoring_middleware import MonitoringMiddleware
 app.add_middleware(MonitoringMiddleware, config=monitoring_config.middleware.to_dict())
 
+# Add security middleware (as a custom middleware)
+@app.middleware("http")
+async def security_middleware_handler(request: Request, call_next):
+    """Custom security middleware handler."""
+    return await security_middleware(request, call_next)
+
+# Add rate limiting error handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Add health and metrics routes
 health_metrics_router = create_health_and_metrics_router()
 app.include_router(health_metrics_router)
@@ -307,6 +339,84 @@ async def api_request_error_handler(request, exc: APIRequestError):
         }
     )
 
+# ═══ AUTHENTICATION ENDPOINTS ═══
+
+@app.post("/auth/register", response_model=User, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
+async def register_user(user_data: UserCreate):
+    """
+    Register a new user.
+    
+    Creates a new user account with the specified credentials and role.
+    Default role is 'user' unless specified otherwise.
+    """
+    try:
+        user = auth_manager.create_user(user_data)
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration failed"
+        )
+
+@app.post("/auth/login", response_model=Token, tags=["Authentication"])
+async def login(user_credentials: UserLogin):
+    """
+    Authenticate user and return access token.
+    
+    Returns JWT access token and refresh token for authenticated user.
+    """
+    user = auth_manager.authenticate_user(user_credentials.username, user_credentials.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Create access token
+    access_token = auth_manager.create_access_token(
+        data={"sub": user.username}
+    )
+    
+    # Create refresh token  
+    refresh_token = auth_manager.create_refresh_token(
+        data={"sub": user.username}
+    )
+    
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=security_config.access_token_expire_minutes * 60,
+        refresh_token=refresh_token
+    )
+
+@app.get("/auth/me", response_model=User, tags=["Authentication"])
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """
+    Get current user information.
+    
+    Returns the profile information of the currently authenticated user.
+    """
+    return current_user
+
+@app.get("/auth/permissions", tags=["Authentication"])
+async def get_user_permissions(current_user: User = Depends(get_current_user)):
+    """
+    Get current user's permissions.
+    
+    Returns the list of permissions available to the current user based on their role.
+    """
+    from core.security import ROLE_PERMISSIONS
+    permissions = list(ROLE_PERMISSIONS.get(current_user.role, set()))
+    return {
+        "user": current_user.username,
+        "role": current_user.role,
+        "permissions": permissions
+    }
+
 # ═══ HEALTH & STATUS ENDPOINTS ═══
 
 @app.get("/health", response_model=ServiceHealth, tags=["Health"])
@@ -362,12 +472,16 @@ async def get_quick_analysis(service: SFMService = Depends(get_sfm_service_depen
 
 @app.get("/analytics/centrality", response_model=CentralityAnalysis, tags=["Analytics"])
 async def analyze_centrality(
+    request: Request,
     centrality_type: str = Query("betweenness", description="Type of centrality analysis"),
     limit: int = Query(10, ge=1, le=100, description="Maximum number of nodes to return"),
-    service: SFMService = Depends(get_sfm_service_dependency)
+    service: SFMService = Depends(get_sfm_service_dependency),
+    current_user: User = Depends(require_permission(Permission.ANALYTICS))
 ):
     """
     Perform centrality analysis on the network.
+    
+    Requires ANALYTICS permission. Rate limited to 10 requests per minute.
     
     Supported centrality types:
     - betweenness: Identifies nodes that act as bridges
@@ -375,6 +489,9 @@ async def analyze_centrality(
     - degree: Identifies nodes with most connections
     - eigenvector: Identifies nodes connected to important nodes
     """
+    # Apply rate limiting
+    await limiter.limit("10/minute")(request)
+    
     return service.analyze_centrality(centrality_type, limit)
 
 @app.get("/analytics/policy-impact/{policy_id}", response_model=PolicyImpactAnalysis, tags=["Analytics"])
@@ -418,24 +535,45 @@ async def find_shortest_path(
 
 @app.post("/actors", response_model=NodeResponse, status_code=status.HTTP_201_CREATED, tags=["Actors"])
 async def create_actor(
-    request: CreateActorRequest,
+    request: Request,
+    actor_request: CreateActorRequest,
     service: SFMService = Depends(get_sfm_service_dependency),
-    _: bool = Depends(rate_limit_dependency)
+    current_user: User = Depends(require_permission(Permission.WRITE)),
+    _: bool = Depends(validate_input)
 ):
     """
-    Create a new actor entity with input validation and rate limiting.
+    Create a new actor entity with authentication, authorization, and enhanced security.
     
+    Requires WRITE permission. Rate limited to 20 requests per minute.
     Actors represent organizations, individuals, or groups that can take actions
     within the social fabric matrix.
     """
-    return service.create_actor(request)
+    # Apply rate limiting
+    await limiter.limit("20/minute")(request)
+    
+    # Sanitize input data
+    sanitized_data = input_validator.sanitize_input(actor_request.dict())
+    sanitized_request = CreateActorRequest(**sanitized_data)
+    
+    # Create actor with user context
+    result = service.create_actor(sanitized_request)
+    
+    # Audit log
+    logger.info(f"Actor created by {current_user.username}: {result.id}")
+    
+    return result
 
 @app.get("/actors/{actor_id}", response_model=NodeResponse, tags=["Actors"])
 async def get_actor(
+    request: Request,
     actor_id: str = Path(..., description="UUID of the actor"),
-    service: SFMService = Depends(get_sfm_service_dependency)
+    service: SFMService = Depends(get_sfm_service_dependency),
+    current_user: User = Depends(require_permission(Permission.READ))
 ):
-    """Get a specific actor by ID."""
+    """Get a specific actor by ID. Requires READ permission."""
+    # Apply rate limiting
+    await limiter.limit("60/minute")(request)
+    
     try:
         actor_uuid = uuid.UUID(actor_id)
         actor = service.get_actor(actor_uuid)
@@ -466,17 +604,33 @@ async def get_actor_neighbors(
 
 @app.post("/institutions", response_model=NodeResponse, status_code=status.HTTP_201_CREATED, tags=["Institutions"])
 async def create_institution(
-    request: CreateInstitutionRequest,
+    request: Request,
+    institution_request: CreateInstitutionRequest,
     service: SFMService = Depends(get_sfm_service_dependency),
-    _: bool = Depends(rate_limit_dependency)
+    current_user: User = Depends(require_permission(Permission.WRITE)),
+    _: bool = Depends(validate_input)
 ):
     """
-    Create a new institution entity with input validation and rate limiting.
+    Create a new institution entity with authentication and authorization.
     
+    Requires WRITE permission. Rate limited to 20 requests per minute.
     Institutions represent formal structures, rules, and norms that govern
     behavior within the social fabric matrix.
     """
-    return service.create_institution(request)
+    # Apply rate limiting
+    await limiter.limit("20/minute")(request)
+    
+    # Sanitize input data
+    sanitized_data = input_validator.sanitize_input(institution_request.dict())
+    sanitized_request = CreateInstitutionRequest(**sanitized_data)
+    
+    # Create institution with user context
+    result = service.create_institution(sanitized_request)
+    
+    # Audit log
+    logger.info(f"Institution created by {current_user.username}: {result.id}")
+    
+    return result
 
 @app.get("/institutions/{institution_id}", response_model=NodeResponse, tags=["Institutions"])
 async def get_institution(
@@ -644,19 +798,30 @@ async def bulk_create_actors(
 @app.delete("/system/clear", tags=["System Management"])
 async def clear_all_data(
     confirm: bool = Query(..., description="Confirmation flag - must be true"),
-    service: SFMService = Depends(get_sfm_service_dependency)
+    service: SFMService = Depends(get_sfm_service_dependency),
+    current_user: User = Depends(require_permission(Permission.ADMIN))
 ) -> Dict[str, Any]:
     """
     Clear all data from the system.
     
     ⚠️ WARNING: This operation is irreversible and will delete all entities and relationships.
-    Requires explicit confirmation.
+    Requires ADMIN permission and explicit confirmation.
     """
     if not confirm:
         raise HTTPException(
             status_code=400, 
             detail="Must provide confirm=true to clear all data"
         )
+    
+    # Additional security check - require admin role
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Only admin users can clear all data"
+        )
+    
+    # Audit log
+    logger.warning(f"System data cleared by admin user: {current_user.username}")
     
     return service.clear_all_data()
 
@@ -732,6 +897,15 @@ async def get_api_info() -> Dict[str, Any]:
         "api_version": "1.0.0",
         "framework": "FastAPI",
         "description": "REST API for Social Fabric Matrix framework",
+        "security": {
+            "authentication": "JWT Bearer token",
+            "authorization": "Role-based access control (RBAC)",
+            "rate_limiting": "Per-endpoint rate limiting",
+            "input_validation": "Comprehensive input sanitization",
+            "security_headers": "OWASP recommended headers",
+            "roles": [role.value for role in Role],
+            "permissions": [perm.value for perm in Permission]
+        },
         "features": [
             "Full CRUD operations for all entity types",
             "Advanced graph analysis and centrality calculations",
@@ -739,9 +913,16 @@ async def get_api_info() -> Dict[str, Any]:
             "Shortest path finding",
             "Bulk operations",
             "Health monitoring",
-            "Comprehensive error handling"
+            "Comprehensive error handling",
+            "JWT authentication",
+            "Role-based access control",
+            "Input validation and sanitization",
+            "Rate limiting",
+            "Security headers",
+            "Audit logging"
         ],
         "endpoints": {
+            "authentication": ["/auth/register", "/auth/login", "/auth/me", "/auth/permissions"],
             "health": "/health",
             "documentation": "/docs",
             "openapi_spec": "/openapi.json",
@@ -751,8 +932,44 @@ async def get_api_info() -> Dict[str, Any]:
             "bulk_operations": ["/actors/bulk"],
             "system": ["/system/clear", "/system/reset"]
         },
-        "authentication": "None (configure as needed for production)",
-        "rate_limiting": "None (configure as needed for production)",
+        "rate_limits": {
+            "authentication": "10/minute",
+            "read_operations": "60/minute",
+            "write_operations": "20/minute",
+            "analytics": "10/minute",
+            "system_operations": "5/minute"
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/security/info", tags=["Security"])
+async def get_security_info(current_user: User = Depends(get_current_user)):
+    """
+    Get security information and current user context.
+    
+    Requires authentication. Returns current security configuration and user details.
+    """
+    return {
+        "security_features": {
+            "authentication": "JWT Bearer tokens",
+            "authorization": "Role-based access control",
+            "rate_limiting": "Per-endpoint limits",
+            "input_validation": "SQL injection and XSS protection",
+            "security_headers": "OWASP recommended headers",
+            "audit_logging": "Comprehensive request logging",
+            "password_security": "BCrypt hashing with salt"
+        },
+        "current_user": {
+            "username": current_user.username,
+            "role": current_user.role.value,
+            "permissions": [perm.value for perm in ROLE_PERMISSIONS.get(current_user.role, set())],
+            "last_login": current_user.last_login.isoformat() if current_user.last_login else None
+        },
+        "session_info": {
+            "token_expires_in": f"{security_config.access_token_expire_minutes} minutes",
+            "refresh_token_expires_in": f"{security_config.refresh_token_expire_days} days"
+        },
+        "security_headers": SECURITY_HEADERS,
         "timestamp": datetime.now().isoformat()
     }
 
