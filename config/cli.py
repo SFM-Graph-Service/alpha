@@ -14,7 +14,7 @@ import os
 import sys
 import json
 import yaml
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union, List
 from pathlib import Path
 
 # Add the project root to the path so we can import our modules
@@ -22,12 +22,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from config.config_manager import (
     get_config_loader, 
-    get_config, 
-    reload_config,
     ConfigurationError
 )
 from config.secrets_manager import (
     SecretsManagerFactory,
+    SecretsManager,
     SecretsError,
     SecretNotFoundError
 )
@@ -38,7 +37,7 @@ from config.validation import validate_configuration
 @click.option('--config-path', type=click.Path(exists=True), help='Configuration directory path')
 @click.option('--environment', '-e', default='development', help='Environment name')
 @click.pass_context
-def config(ctx, config_path, environment):
+def config(ctx: click.Context, config_path: Optional[str], environment: str) -> None:
     """Configuration management commands for SFM Service."""
     ctx.ensure_object(dict)
     ctx.obj['config_path'] = config_path
@@ -50,18 +49,18 @@ def config(ctx, config_path, environment):
 
 @config.command()
 @click.pass_context
-def validate(ctx):
+def validate(ctx: click.Context) -> None:
     """Validate current configuration."""
     click.echo("🔍 Validating configuration...")
     
     try:
         # Load configuration
         config_loader = get_config_loader()
-        if ctx.obj['config_path']:
+        if ctx.obj and ctx.obj.get('config_path'):
             config_loader.config_path = Path(ctx.obj['config_path'])
         
         config_obj = config_loader.load_config()
-        config_dict = config_obj.to_dict()
+        config_dict: Dict[str, Any] = config_obj.to_dict()
         
         # Validate configuration
         validation_report = validate_configuration(config_dict)
@@ -99,19 +98,19 @@ def validate(ctx):
 @click.argument('key', required=True)
 @click.option('--format', '-f', type=click.Choice(['json', 'yaml', 'plain']), default='plain', help='Output format')
 @click.pass_context
-def get(ctx, key, format):
+def get(ctx: click.Context, key: str, format: str) -> None:
     """Get configuration value by key (supports dot notation)."""
     try:
         # Load configuration
         config_loader = get_config_loader()
-        if ctx.obj['config_path']:
+        if ctx.obj and ctx.obj.get('config_path'):
             config_loader.config_path = Path(ctx.obj['config_path'])
         
         config_obj = config_loader.load_config()
-        config_dict = config_obj.to_dict()
+        config_dict: Dict[str, Any] = config_obj.to_dict()
         
         # Navigate to the key using dot notation
-        value = config_dict
+        value: Union[str, int, float, bool, List[Any], Dict[str, Any], None] = config_dict
         for key_part in key.split('.'):
             if isinstance(value, dict) and key_part in value:
                 value = value[key_part]
@@ -125,7 +124,7 @@ def get(ctx, key, format):
         elif format == 'yaml':
             click.echo(yaml.dump(value, default_flow_style=False))
         else:
-            click.echo(value)
+            click.echo(str(value))
             
     except ConfigurationError as e:
         click.echo(f"❌ Configuration error: {e}")
@@ -138,19 +137,19 @@ def get(ctx, key, format):
 @config.command()
 @click.option('--format', '-f', type=click.Choice(['json', 'yaml']), default='yaml', help='Output format')
 @click.pass_context
-def show(ctx, format):
+def show(ctx: click.Context, format: str) -> None:
     """Show complete configuration."""
     try:
         # Load configuration
         config_loader = get_config_loader()
-        if ctx.obj['config_path']:
+        if ctx.obj and ctx.obj.get('config_path'):
             config_loader.config_path = Path(ctx.obj['config_path'])
         
         config_obj = config_loader.load_config()
-        config_dict = config_obj.to_dict()
+        config_dict: Dict[str, Any] = config_obj.to_dict()
         
         # Mask sensitive values
-        masked_config = _mask_sensitive_values(config_dict)
+        masked_config: Dict[str, Any] = _mask_sensitive_values(config_dict)
         
         # Format output
         if format == 'json':
@@ -170,10 +169,10 @@ def show(ctx, format):
 @click.argument('environment', required=True)
 @click.option('--output', '-o', type=click.Path(), help='Output file path')
 @click.pass_context
-def generate_template(ctx, environment, output):
+def generate_template(ctx: click.Context, environment: str, output: Optional[str]):
     """Generate configuration template for environment."""
     try:
-        templates = {
+        templates: Dict[str, Dict[str, Any]] = {
             'development': {
                 'environment': 'development',
                 'debug': True,
@@ -228,8 +227,8 @@ def generate_template(ctx, environment, output):
             click.echo(f"Available environments: {', '.join(templates.keys())}")
             sys.exit(1)
         
-        template = templates[environment]
-        yaml_content = yaml.dump(template, default_flow_style=False)
+        template: Dict[str, Any] = templates[environment]
+        yaml_content: str = yaml.dump(template, default_flow_style=False)
         
         if output:
             with open(output, 'w') as f:
@@ -256,11 +255,11 @@ def secrets():
 @click.option('--region', help='AWS region (for AWS secrets manager)')
 @click.option('--vault-url', help='Vault URL (for HashiCorp Vault)')
 @click.option('--vault-token', help='Vault token (for HashiCorp Vault)')
-def get_secret(key, manager, region, vault_url, vault_token):
+def get_secret(key: str, manager: str, region: Optional[str], vault_url: Optional[str], vault_token: Optional[str]) -> None:
     """Get a secret value."""
     try:
         # Create secrets manager
-        kwargs = {}
+        kwargs: Dict[str, Union[str, int]] = {}
         if manager == 'aws' and region:
             kwargs['region'] = region
         elif manager == 'vault':
@@ -269,11 +268,10 @@ def get_secret(key, manager, region, vault_url, vault_token):
                 sys.exit(1)
             kwargs['url'] = vault_url
             kwargs['token'] = vault_token
-        
-        secrets_manager = SecretsManagerFactory.create_secrets_manager(manager, **kwargs)
+        secrets_manager: SecretsManager = SecretsManagerFactory.create_secrets_manager(manager, **kwargs) #type: ignore
         
         # Get secret
-        secret_value = secrets_manager.get_secret(key)
+        secret_value: str = secrets_manager.get_secret(key)
         
         # Never display the actual secret value
         click.echo(f"✅ Secret '{key}' retrieved successfully")
@@ -298,11 +296,11 @@ def get_secret(key, manager, region, vault_url, vault_token):
 @click.option('--region', help='AWS region (for AWS secrets manager)')
 @click.option('--vault-url', help='Vault URL (for HashiCorp Vault)')
 @click.option('--vault-token', help='Vault token (for HashiCorp Vault)')
-def set_secret(key, value, manager, region, vault_url, vault_token):
+def set_secret(key: str, value: str, manager: str, region: Optional[str], vault_url: Optional[str], vault_token: Optional[str]) -> None:
     """Set a secret value."""
     try:
         # Create secrets manager
-        kwargs = {}
+        kwargs: Dict[str, Union[str, int]] = {}
         if manager == 'aws' and region:
             kwargs['region'] = region
         elif manager == 'vault':
@@ -311,8 +309,7 @@ def set_secret(key, value, manager, region, vault_url, vault_token):
                 sys.exit(1)
             kwargs['url'] = vault_url
             kwargs['token'] = vault_token
-        
-        secrets_manager = SecretsManagerFactory.create_secrets_manager(manager, **kwargs)
+        secrets_manager: SecretsManager = SecretsManagerFactory.create_secrets_manager(manager, **kwargs) #type: ignore 
         
         # Set secret
         secrets_manager.set_secret(key, value)
@@ -333,11 +330,11 @@ def set_secret(key, value, manager, region, vault_url, vault_token):
 @click.option('--region', help='AWS region (for AWS secrets manager)')
 @click.option('--vault-url', help='Vault URL (for HashiCorp Vault)')
 @click.option('--vault-token', help='Vault token (for HashiCorp Vault)')
-def list_secrets(manager, region, vault_url, vault_token):
+def list_secrets(manager: str, region: Optional[str], vault_url: Optional[str], vault_token: Optional[str]) -> None:
     """List all secrets."""
     try:
         # Create secrets manager
-        kwargs = {}
+        kwargs: Dict[str, Union[str, int]] = {}
         if manager == 'aws' and region:
             kwargs['region'] = region
         elif manager == 'vault':
@@ -346,11 +343,10 @@ def list_secrets(manager, region, vault_url, vault_token):
                 sys.exit(1)
             kwargs['url'] = vault_url
             kwargs['token'] = vault_token
-        
-        secrets_manager = SecretsManagerFactory.create_secrets_manager(manager, **kwargs)
+        secrets_manager: SecretsManager = SecretsManagerFactory.create_secrets_manager(manager, **kwargs) #type: ignore
         
         # List secrets
-        secret_keys = secrets_manager.list_secrets()
+        secret_keys: List[str] = secrets_manager.list_secrets()
         
         if secret_keys:
             click.echo(f"📋 Found {len(secret_keys)} secrets:")
@@ -369,7 +365,7 @@ def list_secrets(manager, region, vault_url, vault_token):
 
 @config.command()
 @click.pass_context
-def test(ctx):
+def test(ctx: click.Context) -> None:
     """Test configuration loading and validation."""
     click.echo("🧪 Testing configuration...")
     
@@ -377,7 +373,7 @@ def test(ctx):
         # Test configuration loading
         click.echo("  📥 Loading configuration...")
         config_loader = get_config_loader()
-        if ctx.obj['config_path']:
+        if ctx.obj and ctx.obj.get('config_path'):
             config_loader.config_path = Path(ctx.obj['config_path'])
         
         config_obj = config_loader.load_config()
@@ -385,7 +381,7 @@ def test(ctx):
         
         # Test validation
         click.echo("  🔍 Validating configuration...")
-        config_dict = config_obj.to_dict()
+        config_dict: Dict[str, Any] = config_obj.to_dict()
         validation_report = validate_configuration(config_dict)
         
         if validation_report.is_valid:
@@ -426,12 +422,22 @@ def _mask_sensitive_values(config_dict: Dict[str, Any]) -> Dict[str, Any]:
         'secret_key', 'encryption_key'
     }
     
-    def mask_dict(d):
+    def mask_dict(d: Any) -> Any:
         if isinstance(d, dict):
-            return {k: '***MASKED***' if any(sens in k.lower() for sens in sensitive_keys) and v
-                   else mask_dict(v) for k, v in d.items()}
+            masked_dict: Dict[str, Any] = {}
+            for k, v in d.items(): #type: ignore
+                # Type narrowing: ensure k is treated as a string when checking
+                key_str = str(k) #type: ignore # Convert to string for safety
+                if any(sens in key_str.lower() for sens in sensitive_keys):
+                    if isinstance(v, (str, int, float, bool)):
+                        masked_dict[k] = '***MASKED***'
+                    else:
+                        masked_dict[k] = mask_dict(v)
+                else:
+                    masked_dict[k] = mask_dict(v)
+            return masked_dict
         elif isinstance(d, list):
-            return [mask_dict(item) for item in d]
+            return [mask_dict(item) for item in d] #type: ignore
         else:
             return d
     

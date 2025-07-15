@@ -437,12 +437,34 @@ class TestConfigValidation(unittest.TestCase):
                 'timeout': 60,
                 'ssl_mode': 'disable',  # Should trigger error
                 'max_connections': 200
+            },
+            'cache': {
+                'backend': 'redis',
+                'host': 'prod-cache',
+                'port': 6379,
+                'ttl': 3600,
+                'max_size': 10000
+            },
+            'logging': {
+                'level': 'INFO',
+                'format': 'json',
+                'file_enabled': True,
+                'console_enabled': True
+            },
+            'security': {
+                'secret_key': 'prod-secret',
+                'encryption_enabled': False,
+                'audit_enabled': True,
+                'session_timeout': 3600
             }
         }
         
         report = validate_configuration(config_data)
         self.assertFalse(report.is_valid)
-        self.assertTrue(any('debug' in error.lower() for error in report.errors))
+        # Check for actual error message about debug mode (from Pydantic validator)
+        self.assertTrue(any('Debug mode should not be enabled in production' in error for error in report.errors))
+        # Note: SSL validation is not reached when Pydantic validation fails
+        # The test should only expect errors that are actually generated
         
     def test_validation_report(self):
         """Test ValidationReport functionality."""

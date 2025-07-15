@@ -68,7 +68,7 @@ class MetricsConfig:
     export_port: int = 9090
     collection_interval: int = 15
     prometheus_enabled: bool = True
-    custom_metrics: Dict[str, Any] = field(default_factory=dict)
+    custom_metrics: Dict[str, Any] = field(default_factory=dict)  # type: ignore  # Dataclass field with default_factory
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -135,9 +135,9 @@ class TracingConfig:
 class AlertConfig:
     """Configuration for alerting."""
     enabled: bool = True
-    alert_rules: List[Dict[str, Any]] = field(default_factory=list)
-    notification_channels: List[str] = field(default_factory=list)
-    escalation_policies: Dict[str, Any] = field(default_factory=dict)
+    alert_rules: List[Dict[str, Any]] = field(default_factory=list)  # type: ignore  # Dataclass field with default_factory
+    notification_channels: List[str] = field(default_factory=list)  # type: ignore  # Dataclass field with default_factory
+    escalation_policies: Dict[str, Any] = field(default_factory=dict)  # type: ignore  # Dataclass field with default_factory
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -256,7 +256,7 @@ PRODUCTION_CONFIG = MonitoringConfig(
 )
 
 # Alert rules for production
-PRODUCTION_ALERT_RULES = [
+PRODUCTION_ALERT_RULES: List[Dict[str, Any]] = [
     {
         "name": "HighErrorRate",
         "expr": "rate(sfm_system_errors_total[5m]) > 0.1",
@@ -311,7 +311,7 @@ PRODUCTION_ALERT_RULES = [
 PRODUCTION_CONFIG.alerts.alert_rules = PRODUCTION_ALERT_RULES
 
 
-def get_monitoring_config(environment: str = None) -> MonitoringConfig:
+def get_monitoring_config(environment: Optional[str] = None) -> MonitoringConfig:
     """
     Get monitoring configuration based on environment.
     
@@ -342,29 +342,37 @@ def load_monitoring_config_from_env() -> MonitoringConfig:
     config = get_monitoring_config()
     
     # Override with environment variables if present
-    if os.getenv("LOG_LEVEL"):
-        config.logging.level = LogLevel(os.getenv("LOG_LEVEL"))
+    log_level = os.getenv("LOG_LEVEL")
+    if log_level:
+        config.logging.level = LogLevel(log_level)
     
-    if os.getenv("LOG_FORMAT"):
-        config.logging.format = LogFormat(os.getenv("LOG_FORMAT"))
+    log_format = os.getenv("LOG_FORMAT")
+    if log_format:
+        config.logging.format = LogFormat(log_format)
     
-    if os.getenv("METRICS_ENABLED"):
-        config.metrics.enabled = os.getenv("METRICS_ENABLED").lower() == "true"
+    metrics_enabled = os.getenv("METRICS_ENABLED")
+    if metrics_enabled:
+        config.metrics.enabled = metrics_enabled.lower() == "true"
     
-    if os.getenv("METRICS_PORT"):
-        config.metrics.export_port = int(os.getenv("METRICS_PORT"))
+    metrics_port = os.getenv("METRICS_PORT")
+    if metrics_port:
+        config.metrics.export_port = int(metrics_port)
     
-    if os.getenv("HEALTH_CHECK_ENABLED"):
-        config.health_check.enabled = os.getenv("HEALTH_CHECK_ENABLED").lower() == "true"
+    health_check_enabled = os.getenv("HEALTH_CHECK_ENABLED")
+    if health_check_enabled:
+        config.health_check.enabled = health_check_enabled.lower() == "true"
     
-    if os.getenv("TRACING_ENABLED"):
-        config.tracing.enabled = os.getenv("TRACING_ENABLED").lower() == "true"
+    tracing_enabled = os.getenv("TRACING_ENABLED")
+    if tracing_enabled:
+        config.tracing.enabled = tracing_enabled.lower() == "true"
     
-    if os.getenv("TRACING_SAMPLE_RATE"):
-        config.tracing.sample_rate = float(os.getenv("TRACING_SAMPLE_RATE"))
+    tracing_sample_rate = os.getenv("TRACING_SAMPLE_RATE")
+    if tracing_sample_rate:
+        config.tracing.sample_rate = float(tracing_sample_rate)
     
-    if os.getenv("JAEGER_ENDPOINT"):
-        config.tracing.jaeger_endpoint = os.getenv("JAEGER_ENDPOINT")
+    jaeger_endpoint = os.getenv("JAEGER_ENDPOINT")
+    if jaeger_endpoint:
+        config.tracing.jaeger_endpoint = jaeger_endpoint
     
     return config
 

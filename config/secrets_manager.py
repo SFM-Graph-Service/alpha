@@ -17,14 +17,12 @@ Security Features:
 - Error handling without exposing secrets
 """
 
-from typing import Any, Dict, Optional, List
+from typing import Optional, List, Dict, Any
 from abc import ABC, abstractmethod
 import os
 import logging
 from dataclasses import dataclass
 from enum import Enum
-import json
-from pathlib import Path
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -149,7 +147,7 @@ class EnvironmentSecretsManager(SecretsManager):
             prefix: Prefix for environment variables
         """
         self.prefix = prefix
-        self.audit_log = []
+        self.audit_log: List[Dict[str, Any]] = []
         
     def get_secret(self, key: str) -> str:
         """Get secret from environment variable.
@@ -208,14 +206,14 @@ class EnvironmentSecretsManager(SecretsManager):
         Returns:
             List[str]: List of secret keys
         """
-        secrets = []
+        secrets: List[str] = []
         for env_var in os.environ:
             if env_var.startswith(self.prefix):
                 secret_key = env_var[len(self.prefix):].lower()
                 secrets.append(secret_key)
         return secrets
     
-    def rotate_secret(self, key: str):
+    def rotate_secret(self, key: str) -> None:
         """Rotate secret (not supported in environment manager).
         
         Args:
@@ -226,7 +224,7 @@ class EnvironmentSecretsManager(SecretsManager):
         """
         raise NotImplementedError("Secret rotation not supported in environment manager")
     
-    def _log_access(self, key: str, success: bool):
+    def _log_access(self, key: str, success: bool) -> None:
         """Log secret access for audit.
         
         Args:
@@ -234,8 +232,8 @@ class EnvironmentSecretsManager(SecretsManager):
             success: Whether access was successful
         """
         import datetime
-        audit_entry = {
-            'timestamp': datetime.datetime.utcnow().isoformat(),
+        audit_entry: Dict[str, Any] = {
+            'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
             'key': key,
             'success': success,
             'manager': 'environment'
@@ -265,13 +263,13 @@ class AWSSecretsManager(SecretsManager):
         self.client = None
         self._initialize_client()
     
-    def _initialize_client(self):
+    def _initialize_client(self) -> None:
         """Initialize AWS client."""
         try:
-            import boto3
-            from botocore.exceptions import ClientError
-            self.client = boto3.client('secretsmanager', region_name=self.region)
-            self.ClientError = ClientError
+            import boto3  # type: ignore  # Optional dependency
+            from botocore.exceptions import ClientError  # type: ignore  # Optional dependency
+            self.client = boto3.client('secretsmanager', region_name=self.region)  # type: ignore  # AWS client
+            self.ClientError = ClientError  # type: ignore  # AWS exception
         except ImportError:
             logger.error("boto3 is required for AWS Secrets Manager")
             raise SecretsError("boto3 is required for AWS Secrets Manager")
@@ -290,11 +288,11 @@ class AWSSecretsManager(SecretsManager):
             SecretAccessError: If access is denied
         """
         try:
-            response = self.client.get_secret_value(SecretId=key)
+            response = self.client.get_secret_value(SecretId=key)  # type: ignore  # AWS client methods
             logger.info(f"Retrieved secret from AWS: {key}")
-            return response['SecretString']
-        except self.ClientError as e:
-            error_code = e.response['Error']['Code']
+            return response['SecretString']  # type: ignore  # AWS response structure
+        except self.ClientError as e:  # type: ignore  # AWS exception type
+            error_code = e.response['Error']['Code']  # type: ignore  # AWS error structure
             if error_code == 'ResourceNotFoundException':
                 raise SecretNotFoundError(f"Secret '{key}' not found in AWS Secrets Manager")
             elif error_code == 'AccessDeniedException':
@@ -311,13 +309,13 @@ class AWSSecretsManager(SecretsManager):
             metadata: Optional metadata
         """
         try:
-            self.client.put_secret_value(
+            self.client.put_secret_value(  # type: ignore  # AWS client methods
                 SecretId=key,
                 SecretString=value
             )
             logger.info(f"Set secret in AWS: {key}")
-        except self.ClientError as e:
-            error_code = e.response['Error']['Code']
+        except self.ClientError as e:  # type: ignore  # AWS exception type
+            error_code = e.response['Error']['Code']  # type: ignore  # AWS error structure
             if error_code == 'AccessDeniedException':
                 raise SecretAccessError(f"Access denied to set secret '{key}' in AWS Secrets Manager")
             else:
@@ -330,10 +328,10 @@ class AWSSecretsManager(SecretsManager):
             key: Secret key
         """
         try:
-            self.client.delete_secret(SecretId=key)
+            self.client.delete_secret(SecretId=key)  # type: ignore  # AWS client methods
             logger.info(f"Deleted secret from AWS: {key}")
-        except self.ClientError as e:
-            error_code = e.response['Error']['Code']
+        except self.ClientError as e:  # type: ignore  # AWS exception type
+            error_code = e.response['Error']['Code']  # type: ignore  # AWS error structure
             if error_code == 'ResourceNotFoundException':
                 raise SecretNotFoundError(f"Secret '{key}' not found in AWS Secrets Manager")
             elif error_code == 'AccessDeniedException':
@@ -348,10 +346,10 @@ class AWSSecretsManager(SecretsManager):
             List[str]: List of secret keys
         """
         try:
-            response = self.client.list_secrets()
-            return [secret['Name'] for secret in response['SecretList']]
-        except self.ClientError as e:
-            error_code = e.response['Error']['Code']
+            response = self.client.list_secrets()  # type: ignore  # AWS client methods
+            return [secret['Name'] for secret in response['SecretList']]  # type: ignore  # AWS response structure
+        except self.ClientError as e:  # type: ignore  # AWS exception type
+            error_code = e.response['Error']['Code']  # type: ignore  # AWS error structure
             if error_code == 'AccessDeniedException':
                 raise SecretAccessError("Access denied to list secrets in AWS Secrets Manager")
             else:
@@ -364,10 +362,10 @@ class AWSSecretsManager(SecretsManager):
             key: Secret key
         """
         try:
-            self.client.rotate_secret(SecretId=key)
+            self.client.rotate_secret(SecretId=key)  # type: ignore  # AWS client methods
             logger.info(f"Rotated secret in AWS: {key}")
-        except self.ClientError as e:
-            error_code = e.response['Error']['Code']
+        except self.ClientError as e:  # type: ignore  # AWS exception type
+            error_code = e.response['Error']['Code']  # type: ignore  # AWS error structure
             if error_code == 'ResourceNotFoundException':
                 raise SecretNotFoundError(f"Secret '{key}' not found in AWS Secrets Manager")
             elif error_code == 'AccessDeniedException':
@@ -395,14 +393,14 @@ class AzureKeyVaultManager(SecretsManager):
     def _initialize_client(self):
         """Initialize Azure client."""
         try:
-            from azure.keyvault.secrets import SecretClient
-            from azure.identity import DefaultAzureCredential
-            from azure.core.exceptions import ResourceNotFoundError, ClientAuthenticationError
+            from azure.keyvault.secrets import SecretClient  # type: ignore  # Optional dependency
+            from azure.identity import DefaultAzureCredential  # type: ignore  # Optional dependency
+            from azure.core.exceptions import ResourceNotFoundError, ClientAuthenticationError  # type: ignore  # Optional dependency
             
-            credential = DefaultAzureCredential()
-            self.client = SecretClient(vault_url=self.vault_url, credential=credential)
-            self.ResourceNotFoundError = ResourceNotFoundError
-            self.ClientAuthenticationError = ClientAuthenticationError
+            credential = DefaultAzureCredential()  # type: ignore  # Azure credential
+            self.client = SecretClient(vault_url=self.vault_url, credential=credential)  # type: ignore  # Azure client
+            self.ResourceNotFoundError = ResourceNotFoundError  # type: ignore  # Azure exception
+            self.ClientAuthenticationError = ClientAuthenticationError  # type: ignore  # Azure exception
         except ImportError:
             logger.error("azure-keyvault-secrets is required for Azure Key Vault")
             raise SecretsError("azure-keyvault-secrets is required for Azure Key Vault")
@@ -421,12 +419,12 @@ class AzureKeyVaultManager(SecretsManager):
             SecretAccessError: If access is denied
         """
         try:
-            secret = self.client.get_secret(key)
+            secret = self.client.get_secret(key)  # type: ignore  # Azure client methods
             logger.info(f"Retrieved secret from Azure Key Vault: {key}")
-            return secret.value
-        except self.ResourceNotFoundError:
+            return secret.value  # type: ignore  # Azure secret object
+        except self.ResourceNotFoundError:  # type: ignore  # Azure exception type
             raise SecretNotFoundError(f"Secret '{key}' not found in Azure Key Vault")
-        except self.ClientAuthenticationError:
+        except self.ClientAuthenticationError:  # type: ignore  # Azure exception type
             raise SecretAccessError(f"Access denied to secret '{key}' in Azure Key Vault")
     
     def set_secret(self, key: str, value: str, metadata: Optional[SecretMetadata] = None):
@@ -438,9 +436,9 @@ class AzureKeyVaultManager(SecretsManager):
             metadata: Optional metadata
         """
         try:
-            self.client.set_secret(key, value)
+            self.client.set_secret(key, value)  # type: ignore  # Azure client methods
             logger.info(f"Set secret in Azure Key Vault: {key}")
-        except self.ClientAuthenticationError:
+        except self.ClientAuthenticationError:  # type: ignore  # Azure exception type
             raise SecretAccessError(f"Access denied to set secret '{key}' in Azure Key Vault")
     
     def delete_secret(self, key: str):
@@ -450,11 +448,11 @@ class AzureKeyVaultManager(SecretsManager):
             key: Secret key
         """
         try:
-            self.client.begin_delete_secret(key)
+            self.client.begin_delete_secret(key)  # type: ignore  # Azure client methods
             logger.info(f"Deleted secret from Azure Key Vault: {key}")
-        except self.ResourceNotFoundError:
+        except self.ResourceNotFoundError:  # type: ignore  # Azure exception type
             raise SecretNotFoundError(f"Secret '{key}' not found in Azure Key Vault")
-        except self.ClientAuthenticationError:
+        except self.ClientAuthenticationError:  # type: ignore  # Azure exception type
             raise SecretAccessError(f"Access denied to delete secret '{key}' in Azure Key Vault")
     
     def list_secrets(self) -> List[str]:
@@ -464,9 +462,9 @@ class AzureKeyVaultManager(SecretsManager):
             List[str]: List of secret keys
         """
         try:
-            secrets = self.client.list_properties_of_secrets()
-            return [secret.name for secret in secrets]
-        except self.ClientAuthenticationError:
+            secrets = self.client.list_properties_of_secrets()  # type: ignore  # Azure client methods
+            return [secret.name for secret in secrets]  # type: ignore  # Azure secret properties
+        except self.ClientAuthenticationError:  # type: ignore  # Azure exception type
             raise SecretAccessError("Access denied to list secrets in Azure Key Vault")
     
     def rotate_secret(self, key: str):
@@ -478,14 +476,14 @@ class AzureKeyVaultManager(SecretsManager):
         # Azure Key Vault doesn't have built-in rotation, so we'll implement basic rotation
         try:
             # This is a placeholder - actual rotation would depend on the secret type
-            current_secret = self.client.get_secret(key)
+            current_secret = self.client.get_secret(key)  # type: ignore  # Azure client methods
             # Generate new secret value based on type
-            new_value = self._generate_new_secret_value(key, current_secret.value)
-            self.client.set_secret(key, new_value)
+            new_value = self._generate_new_secret_value(key, current_secret.value)  # type: ignore  # Azure secret object
+            self.client.set_secret(key, new_value)  # type: ignore  # Azure client methods
             logger.info(f"Rotated secret in Azure Key Vault: {key}")
-        except self.ResourceNotFoundError:
+        except self.ResourceNotFoundError:  # type: ignore  # Azure exception type
             raise SecretNotFoundError(f"Secret '{key}' not found in Azure Key Vault")
-        except self.ClientAuthenticationError:
+        except self.ClientAuthenticationError:  # type: ignore  # Azure exception type
             raise SecretAccessError(f"Access denied to rotate secret '{key}' in Azure Key Vault")
     
     def _generate_new_secret_value(self, key: str, current_value: str) -> str:
@@ -529,11 +527,11 @@ class VaultSecretsManager(SecretsManager):
     def _initialize_client(self):
         """Initialize Vault client."""
         try:
-            import hvac
-            self.client = hvac.Client(url=self.url, token=self.token)
+            import hvac  # type: ignore  # Optional dependency
+            self.client = hvac.Client(url=self.url, token=self.token)  # type: ignore  # Vault client
             
             # Verify client is authenticated
-            if not self.client.is_authenticated():
+            if not self.client.is_authenticated():  # type: ignore  # Vault client methods
                 raise SecretsError("Vault authentication failed")
                 
         except ImportError:
@@ -554,9 +552,9 @@ class VaultSecretsManager(SecretsManager):
             SecretAccessError: If access is denied
         """
         try:
-            response = self.client.secrets.kv.v2.read_secret_version(path=key)
+            response = self.client.secrets.kv.v2.read_secret_version(path=key)  # type: ignore  # Vault client methods
             logger.info(f"Retrieved secret from Vault: {key}")
-            return response['data']['data']['value']
+            return response['data']['data']['value']  # type: ignore  # Vault response structure
         except Exception as e:
             if "404" in str(e):
                 raise SecretNotFoundError(f"Secret '{key}' not found in Vault")
@@ -576,9 +574,9 @@ class VaultSecretsManager(SecretsManager):
         try:
             secret_data = {'value': value}
             if metadata:
-                secret_data['metadata'] = metadata.__dict__
+                secret_data['metadata'] = metadata.__dict__  # type: ignore  # Dict assignment
             
-            self.client.secrets.kv.v2.create_or_update_secret(
+            self.client.secrets.kv.v2.create_or_update_secret(  # type: ignore  # Vault client methods
                 path=key,
                 secret=secret_data
             )
@@ -596,7 +594,7 @@ class VaultSecretsManager(SecretsManager):
             key: Secret key
         """
         try:
-            self.client.secrets.kv.v2.delete_secret_versions(path=key)
+            self.client.secrets.kv.v2.delete_secret_versions(path=key)  # type: ignore  # Vault client methods
             logger.info(f"Deleted secret from Vault: {key}")
         except Exception as e:
             if "404" in str(e):
@@ -613,8 +611,8 @@ class VaultSecretsManager(SecretsManager):
             List[str]: List of secret keys
         """
         try:
-            response = self.client.secrets.kv.v2.list_secrets(path='')
-            return response['data']['keys']
+            response = self.client.secrets.kv.v2.list_secrets(path='')  # type: ignore  # Vault client methods
+            return response['data']['keys']  # type: ignore  # Vault response structure
         except Exception as e:
             if "403" in str(e):
                 raise SecretAccessError("Access denied to list secrets in Vault")
@@ -660,7 +658,7 @@ class SecretsManagerFactory:
     """Factory for creating secrets managers."""
     
     @staticmethod
-    def create_secrets_manager(manager_type: str, **kwargs) -> SecretsManager:
+    def create_secrets_manager(manager_type: str, **kwargs: Any) -> SecretsManager:
         """Create a secrets manager instance.
         
         Args:
@@ -674,13 +672,13 @@ class SecretsManagerFactory:
             ValueError: If manager type is not supported
         """
         if manager_type == 'environment':
-            return EnvironmentSecretsManager(**kwargs)
+            return EnvironmentSecretsManager(**kwargs)  # type: ignore  # Kwargs unpacking
         elif manager_type == 'aws':
-            return AWSSecretsManager(**kwargs)
+            return AWSSecretsManager(**kwargs)  # type: ignore  # Kwargs unpacking
         elif manager_type == 'azure':
-            return AzureKeyVaultManager(**kwargs)
+            return AzureKeyVaultManager(**kwargs)  # type: ignore  # Kwargs unpacking
         elif manager_type == 'vault':
-            return VaultSecretsManager(**kwargs)
+            return VaultSecretsManager(**kwargs)  # type: ignore  # Kwargs unpacking
         else:
             raise ValueError(f"Unsupported secrets manager type: {manager_type}")
 

@@ -8,12 +8,16 @@ command history.
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, List, Dict, Optional, Callable
+from typing import Any, List, Dict, Optional, TYPE_CHECKING
 from datetime import datetime
 from dataclasses import dataclass
 
 from core.base_nodes import Node
 from core.relationships import Relationship
+
+# Use TYPE_CHECKING to avoid circular imports
+if TYPE_CHECKING:
+    from core.graph import SFMGraph
 
 
 class Command(ABC):
@@ -62,7 +66,7 @@ class CommandMetadata:
 class AddNodeCommand(Command):
     """Command to add a node to the graph."""
     
-    def __init__(self, graph, node: Node):
+    def __init__(self, graph: "SFMGraph", node: Node):
         super().__init__()
         self.graph = graph
         self.node = node
@@ -89,14 +93,14 @@ class AddNodeCommand(Command):
             return False
         
         # Remove the node from the appropriate collection
-        collection_name = self.graph._node_registry.get_collection_name(self.node)
+        collection_name = self.graph._node_registry.get_collection_name(self.node)  # type: ignore  # Protected access needed for command pattern
         collection = getattr(self.graph, collection_name)
         
         if self.node.id in collection:
             del collection[self.node.id]
             # Also remove from node index if it exists
-            if hasattr(self.graph, '_node_index') and self.node.id in self.graph._node_index:
-                del self.graph._node_index[self.node.id]
+            if hasattr(self.graph, '_node_index') and self.node.id in self.graph._node_index:  # type: ignore  # Protected access needed for command pattern
+                del self.graph._node_index[self.node.id]  # type: ignore  # Protected access needed for command pattern
             self.undone = True
             return True
         
@@ -114,7 +118,7 @@ class AddNodeCommand(Command):
 class RemoveNodeCommand(Command):
     """Command to remove a node from the graph."""
     
-    def __init__(self, graph, node_id: uuid.UUID):
+    def __init__(self, graph: "SFMGraph", node_id: uuid.UUID):
         super().__init__()
         self.graph = graph
         self.node_id = node_id
@@ -142,14 +146,14 @@ class RemoveNodeCommand(Command):
                 del self.graph.relationships[rel.id]
         
         # Remove the node
-        collection_name = self.graph._node_registry.get_collection_name(node)
+        collection_name = self.graph._node_registry.get_collection_name(node)  # type: ignore  # Protected access needed for command pattern
         collection = getattr(self.graph, collection_name)
         
         if self.node_id in collection:
             del collection[self.node_id]
             # Also remove from node index if it exists
-            if hasattr(self.graph, '_node_index') and self.node_id in self.graph._node_index:
-                del self.graph._node_index[self.node_id]
+            if hasattr(self.graph, '_node_index') and self.node_id in self.graph._node_index:  # type: ignore  # Protected access needed for command pattern
+                del self.graph._node_index[self.node_id]  # type: ignore  # Protected access needed for command pattern
             
             self.executed = True
             self.undone = False
@@ -170,7 +174,7 @@ class RemoveNodeCommand(Command):
             self.graph.relationships[rel.id] = rel
         
         self.undone = True
-        return result is not None
+        return result is not None  # type: ignore  # May return None in some cases
     
     def can_undo(self) -> bool:
         """Check if this command can be undone."""
@@ -185,7 +189,7 @@ class RemoveNodeCommand(Command):
 class AddRelationshipCommand(Command):
     """Command to add a relationship to the graph."""
     
-    def __init__(self, graph, relationship: Relationship):
+    def __init__(self, graph: "SFMGraph", relationship: Relationship):
         super().__init__()
         self.graph = graph
         self.relationship = relationship
@@ -214,7 +218,7 @@ class AddRelationshipCommand(Command):
             del self.graph.relationships[self.relationship.id]
             # Clear relationship cache
             if hasattr(self.graph, '_clear_relationship_cache'):
-                self.graph._clear_relationship_cache()
+                self.graph._clear_relationship_cache()  # type: ignore  # Protected access needed for command pattern
             self.undone = True
             return True
         
@@ -232,7 +236,7 @@ class AddRelationshipCommand(Command):
 class RemoveRelationshipCommand(Command):
     """Command to remove a relationship from the graph."""
     
-    def __init__(self, graph, relationship_id: uuid.UUID):
+    def __init__(self, graph: "SFMGraph", relationship_id: uuid.UUID):
         super().__init__()
         self.graph = graph
         self.relationship_id = relationship_id
@@ -248,7 +252,7 @@ class RemoveRelationshipCommand(Command):
             del self.graph.relationships[self.relationship_id]
             # Clear relationship cache
             if hasattr(self.graph, '_clear_relationship_cache'):
-                self.graph._clear_relationship_cache()
+                self.graph._clear_relationship_cache()  # type: ignore  # Protected access needed for command pattern
             self.executed = True
             self.undone = False
             return True
@@ -263,7 +267,7 @@ class RemoveRelationshipCommand(Command):
         self.graph.relationships[self.relationship_id] = self.removed_relationship
         # Clear relationship cache
         if hasattr(self.graph, '_clear_relationship_cache'):
-            self.graph._clear_relationship_cache()
+            self.graph._clear_relationship_cache()  # type: ignore  # Protected access needed for command pattern
         self.undone = True
         return True
     
@@ -292,7 +296,7 @@ class MacroCommand(Command):
         if self.executed and not self.undone:
             raise RuntimeError("Command already executed")
         
-        results = []
+        results: List[Any] = []
         self.executed_commands.clear()
         
         for command in self.commands:
@@ -456,17 +460,17 @@ class CommandManager:
     
     def get_history(self) -> List[CommandMetadata]:
         """Get the command history metadata."""
-        return [self._command_metadata.get(cmd.command_id) for cmd in self._history
+        return [self._command_metadata[cmd.command_id] for cmd in self._history
                 if cmd.command_id in self._command_metadata]
     
     def get_undo_stack(self) -> List[CommandMetadata]:
         """Get commands that can be undone."""
-        return [self._command_metadata.get(cmd.command_id) for cmd in self._history[:self._current_index + 1]
+        return [self._command_metadata[cmd.command_id] for cmd in self._history[:self._current_index + 1]
                 if cmd.command_id in self._command_metadata]
     
     def get_redo_stack(self) -> List[CommandMetadata]:
         """Get commands that can be redone."""
-        return [self._command_metadata.get(cmd.command_id) for cmd in self._history[self._current_index + 1:]
+        return [self._command_metadata[cmd.command_id] for cmd in self._history[self._current_index + 1:]
                 if cmd.command_id in self._command_metadata]
     
     def clear_history(self) -> None:

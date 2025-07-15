@@ -17,18 +17,34 @@ Configuration loading priority:
 6. Remote configuration (optional)
 """
 
-from typing import Any, Dict, Optional, Type, Union, List
+from typing import Any, Dict, Optional, Protocol
 from dataclasses import dataclass, field
 from pathlib import Path
 import os
 import yaml
-import json
-from abc import ABC, abstractmethod
 import logging
 from enum import Enum
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+class SecretsManagerProtocol(Protocol):
+    """Protocol defining the expected interface for secrets managers."""
+    
+    def get_secret(self, key: str) -> str:
+        """Get secret value by key.
+        
+        Args:
+            key: The secret key to retrieve
+            
+        Returns:
+            The secret value
+            
+        Raises:
+            SecretNotFoundError: If the secret is not found
+        """
+        ...
 
 
 class Environment(Enum):
@@ -175,7 +191,7 @@ class ConfigLoader:
         """
         self.config_path = config_path or self._find_config_path()
         self.environment = os.getenv('SFM_ENV', 'development')
-        self.secrets_manager = None
+        self.secrets_manager: Optional[SecretsManagerProtocol] = None
         
     def _find_config_path(self) -> Path:
         """Find configuration directory."""
@@ -239,7 +255,7 @@ class ConfigLoader:
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                config_data = yaml.safe_load(f) or {}
+                config_data: Dict[str, Any] = yaml.safe_load(f) or {}
             logger.debug(f"Loaded configuration from {file_path}")
             return config_data
         except Exception as e:
@@ -267,7 +283,7 @@ class ConfigLoader:
             'SFM_ENVIRONMENT': 'environment'
         }
         
-        overrides = {}
+        overrides: Dict[str, Any] = {}
         for env_var, config_path in env_mapping.items():
             value = os.getenv(env_var)
             if value is not None:
@@ -330,7 +346,7 @@ class ConfigLoader:
         
         for key, value in override.items():
             if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-                result[key] = self._deep_merge(result[key], value)
+                result[key] = self._deep_merge(result[key], value)  # type: ignore
             else:
                 result[key] = value
         
@@ -396,13 +412,20 @@ class ConfigLoader:
         
         return self._create_config_object(config_dict)
     
-    def set_secrets_manager(self, secrets_manager):
+    def set_secrets_manager(self, secrets_manager: Optional[SecretsManagerProtocol]) -> None:
         """Set secrets manager for loading sensitive configuration.
         
         Args:
-            secrets_manager: Secrets manager instance
+            secrets_manager: Secrets manager instance, or None to disable secrets loading
+            
+        Raises:
+            TypeError: If secrets_manager doesn't implement required methods
         """
+        if secrets_manager is not None and not hasattr(secrets_manager, 'get_secret'):
+            raise TypeError("secrets_manager must implement get_secret method")
+        
         self.secrets_manager = secrets_manager
+        logger.info(f"Secrets manager set to: {type(secrets_manager).__name__ if secrets_manager else 'None'}")
     
     def validate_config(self, config: SFMConfig) -> bool:
         """Validate configuration object.
