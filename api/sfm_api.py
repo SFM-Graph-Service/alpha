@@ -87,7 +87,8 @@ from core.security import (
     UserCreate,
     UserLogin,
     Token,
-    SECURITY_HEADERS
+    SECURITY_HEADERS,
+    ROLE_PERMISSIONS
 )
 
 # Setup monitoring configuration first
