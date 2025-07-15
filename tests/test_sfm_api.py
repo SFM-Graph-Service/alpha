@@ -114,10 +114,33 @@ class AuthTestUtils:
         # Create a test user
         test_user = AuthTestUtils.create_test_user()
         
-        # Mock the auth manager methods directly
-        def mock_get_current_user(*args, **kwargs):
+        # Mock the current user dependency function - no credentials needed
+        def mock_get_current_user(credentials=None):
             return test_user
         
+        # Mock the validate_input dependency
+        def mock_validate_input(*args, **kwargs):
+            return True
+        
+        # Override FastAPI dependencies
+        from core.security import get_current_user, validate_input
+        app.dependency_overrides[get_current_user] = mock_get_current_user
+        app.dependency_overrides[validate_input] = mock_validate_input
+        
+        # Mock the HTTPBearer dependency so it doesn't require auth headers
+        from fastapi.security import HTTPBearer
+        from fastapi.security.http import HTTPAuthorizationCredentials
+        
+        def mock_http_bearer():
+            return HTTPAuthorizationCredentials(scheme="Bearer", credentials="test_token")
+        
+        app.dependency_overrides[HTTPBearer()] = mock_http_bearer
+        
+        # Mock the auth_manager methods directly
+        import unittest.mock
+        unittest.mock.patch.object(auth_manager, 'get_current_user', return_value=test_user).start()
+        
+        # Mock the entire require_permission to return a function that just returns the test user
         def mock_require_permission(permission):
             def permission_checker(*args, **kwargs):
                 return test_user
@@ -128,19 +151,6 @@ class AuthTestUtils:
                 return test_user
             return role_checker
         
-        # Patch the auth manager methods
-        import unittest.mock
-        app.dependency_overrides[get_current_user] = mock_get_current_user
-        
-        # We need to mock the validate_input dependency as well
-        def mock_validate_input(*args, **kwargs):
-            return True
-        
-        from core.security import validate_input
-        app.dependency_overrides[validate_input] = mock_validate_input
-        
-        # Patch the authentication manager's methods 
-        unittest.mock.patch.object(auth_manager, 'get_current_user', return_value=test_user).start()
         unittest.mock.patch.object(auth_manager, 'require_permission', side_effect=mock_require_permission).start()
         unittest.mock.patch.object(auth_manager, 'require_role', side_effect=mock_require_role).start()
 
@@ -376,6 +386,11 @@ class TestSFMAPIActors(unittest.TestCase):
         }
         
         response = self.client.post("/actors", json=request_data, headers=headers)
+        
+        # Debug response on failure
+        if response.status_code != status.HTTP_201_CREATED:
+            print(f"DEBUG: Status code: {response.status_code}")
+            print(f"DEBUG: Response: {response.text}")
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.json()
