@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Any, Iterator, Tuple
 from datetime import datetime
+from typing import Any, Dict, Iterator, Optional, Tuple
 
 
 @dataclass
