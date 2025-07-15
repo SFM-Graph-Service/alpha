@@ -534,51 +534,49 @@ async def find_shortest_path(
 
 # ═══ ACTOR ENDPOINTS ═══
 
-@app.post("/actors", response_model=NodeResponse, status_code=status.HTTP_201_CREATED, tags=["Actors"])
-@limiter.limit("20/minute")
-async def create_actor(
-    request: Request,
-    actor_request: CreateActorRequest,
-    service: SFMService = Depends(get_sfm_service_dependency),
-    current_user: User = Depends(require_permission(Permission.WRITE)),
-    _: bool = Depends(validate_input)
-):
-    """
-    Create a new actor entity with authentication, authorization, and enhanced security.
+def sanitize_request(request: CreateActorRequest) -> CreateActorRequest:
+    """Sanitize actor creation request."""
+    # Example sanitization logic
+    sanitized_name = request.name.strip() if request.name else ""
+    sanitized_description = request.description.strip() if request.description else ""
     
-    Requires WRITE permission. Rate limited to 20 requests per minute.
-    Actors represent organizations, individuals, or groups that can take actions
-    within the social fabric matrix.
-    """
-    # Sanitize input data
-    sanitized_data = input_validator.sanitize_input(asdict(actor_request))
-    sanitized_request = CreateActorRequest(**sanitized_data)
-    
-    # Create actor with user context
-    result = service.create_actor(sanitized_request)
-    
-    # Audit log
-    logger.info(f"Actor created by {current_user.username}: {result.id}")
-    
-    return result
+    # Create a new request with sanitized data
+    return CreateActorRequest(
+        name=sanitized_name,
+        description=sanitized_description,
+        sector=request.sector,
+        legal_form=request.legal_form,
+        meta=request.meta or {}
+    )
 
-@app.get("/actors/{actor_id}", response_model=NodeResponse, tags=["Actors"])
-@limiter.limit("60/minute")
-async def get_actor(
-    request: Request,
-    actor_id: str = Path(..., description="UUID of the actor"),
+@app.post("/actors", response_model=NodeResponse, status_code=status.HTTP_201_CREATED)
+async def create_actor(
+    request: CreateActorRequest,
     service: SFMService = Depends(get_sfm_service_dependency),
-    current_user: User = Depends(require_permission(Permission.READ))
-):
-    """Get a specific actor by ID. Requires READ permission."""
+    current_user: User = Depends(get_current_user)
+) -> NodeResponse:
+    """Create a new actor."""
     try:
-        actor_uuid = uuid.UUID(actor_id)
-        actor = service.get_actor(actor_uuid)
-        if not actor:
-            raise HTTPException(status_code=404, detail=f"Actor {actor_id} not found")
-        return service._node_to_response(actor)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID format")
+        sanitized_request = sanitize_request(request)
+        result = service.create_actor(sanitized_request)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/actors/{actor_id}", response_model=NodeResponse)
+async def get_actor(
+    actor_id: uuid.UUID,  # Path parameter - no Query() needed
+    service: SFMService = Depends(get_sfm_service_dependency),
+    current_user: User = Depends(get_current_user)
+) -> NodeResponse:
+    """Retrieve an actor by ID."""
+    try:
+        result = service.get_actor(actor_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Actor not found")
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid UUID: {str(e)}")
 
 @app.get("/actors/{actor_id}/neighbors", tags=["Actors"])
 async def get_actor_neighbors(

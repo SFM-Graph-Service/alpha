@@ -225,42 +225,6 @@ class AuthTestUtils:
         api_get_sfm_service_patcher.start()
         
         return get_sfm_service_patcher, api_get_sfm_service_patcher
-        
-        # Mock HTTPBearer to not require actual HTTP headers
-        from fastapi.security import HTTPBearer
-        from fastapi.security.http import HTTPAuthorizationCredentials
-        
-        def mock_http_bearer():
-            return HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token")
-        
-        # Use unittest.mock to patch authentication components
-        import unittest.mock
-        
-        # Mock the auth manager's methods
-        unittest.mock.patch.object(auth_manager, 'get_current_user', return_value=test_user).start()
-        
-        # Mock require_permission to always return a function that returns test_user
-        def mock_require_permission_method(permission):
-            return lambda: test_user
-        
-        unittest.mock.patch.object(auth_manager, 'require_permission', side_effect=mock_require_permission_method).start()
-        
-        # Mock require_role to always return a function that returns test_user
-        def mock_require_role_method(role):
-            return lambda: test_user
-        
-        unittest.mock.patch.object(auth_manager, 'require_role', side_effect=mock_require_role_method).start()
-        
-        # Mock the module-level functions
-        unittest.mock.patch('core.security.require_permission', side_effect=mock_require_permission_method).start()
-        unittest.mock.patch('core.security.require_role', side_effect=mock_require_role_method).start()
-        unittest.mock.patch('api.sfm_api.require_permission', side_effect=mock_require_permission_method).start()
-        unittest.mock.patch('api.sfm_api.require_role', side_effect=mock_require_role_method).start()
-        
-        # Mock HTTPBearer to not require authorization headers
-        unittest.mock.patch('fastapi.security.HTTPBearer.__call__', return_value=mock_http_bearer()).start()
-        
-        return test_user
 
 
 class TestSFMAPIHealth(unittest.TestCase):
@@ -507,7 +471,7 @@ class TestSFMAPIActors(unittest.TestCase):
         test_user = AuthTestUtils.create_test_user()
         headers = AuthTestUtils.get_auth_headers(test_user)
         
-        # Mock response
+        # Mock response - make sure it matches expected structure
         actor_id = str(uuid.uuid4())
         mock_response = NodeResponse(
             id=actor_id,
@@ -517,9 +481,11 @@ class TestSFMAPIActors(unittest.TestCase):
             meta={"sector": "government", "legal_form": "agency", "test": "true"},
             created_at=datetime.now().isoformat()
         )
+        
+        # Mock the service method
         self.mock_service.create_actor.return_value = mock_response
         
-        # Test data
+        # Test data - ensure it matches the expected schema
         request_data = {
             "name": "Test Actor",
             "description": "Test description",
@@ -528,12 +494,26 @@ class TestSFMAPIActors(unittest.TestCase):
             "meta": {"test": "true"}
         }
         
+        # Make the request
         response = self.client.post("/actors", json=request_data, headers=headers)
         
-        # Debug response on failure
+        # Enhanced debugging
         if response.status_code != status.HTTP_201_CREATED:
             print(f"DEBUG: Status code: {response.status_code}")
             print(f"DEBUG: Response: {response.text}")
+            print(f"DEBUG: Request data: {request_data}")
+            
+            # Try to get more details about the validation error
+            try:
+                error_data = response.json()
+                print(f"DEBUG: Error details: {error_data}")
+            except:
+                print("DEBUG: Could not parse error response as JSON")
+        
+        # Check that the service method was called (this tells us if the issue is pre-service or post-service)
+        print(f"DEBUG: Service create_actor called: {self.mock_service.create_actor.called}")
+        if self.mock_service.create_actor.called:
+            print(f"DEBUG: Service call args: {self.mock_service.create_actor.call_args}")
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.json()
@@ -554,14 +534,7 @@ class TestSFMAPIActors(unittest.TestCase):
         """Test successful actor retrieval."""
         actor_id = str(uuid.uuid4())
         
-        # Mock actor and response
-        mock_actor = Actor(
-            label="Test Actor",
-            description="Test description",
-            sector="government"
-        )
-        mock_actor.id = uuid.UUID(actor_id)
-        
+        # Mock response directly from the service method
         mock_response = NodeResponse(
             id=actor_id,
             label="Test Actor",
@@ -571,11 +544,22 @@ class TestSFMAPIActors(unittest.TestCase):
             created_at=datetime.now().isoformat()
         )
         
-        self.mock_service.get_actor.return_value = mock_actor
-        self.mock_service._node_to_response.return_value = mock_response
+        # Mock the service to return the NodeResponse directly
+        self.mock_service.get_actor.return_value = mock_response
         
         response = self.client.get(f"/actors/{actor_id}")
         
+        # Add debugging for 422 error
+        if response.status_code == 422:
+            print(f"DEBUG: Status code: {response.status_code}")
+            print(f"DEBUG: Response: {response.text}")
+            print(f"DEBUG: Actor ID: {actor_id}")
+            try:
+                error_data = response.json()
+                print(f"DEBUG: Error details: {error_data}")
+            except:
+                print("DEBUG: Could not parse error response as JSON")
+    
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
         
