@@ -604,6 +604,6 @@ class CentralityAnalyzer:
                 results[strategy_name] = self.calculate_centrality(
                     graph, node_id, strategy_name)
             except Exception as e:
-                results[strategy_name] = f"Error: {str(e)}"
+                results[strategy_name] = f"Error: {str(e)}"  # type: ignore[assignment]
 
         return results
