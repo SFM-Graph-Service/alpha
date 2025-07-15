@@ -52,7 +52,8 @@ from core.sfm_service import (
     quick_analysis,
 )
 
-# Import monitoring components
+# Import configuration management
+from config.config_manager import get_config, SFMConfig
 from config.monitoring import load_monitoring_config_from_env
 from core.logging_config import configure_logging, get_logger
 from core.metrics import configure_metrics, MetricConfig
@@ -67,11 +68,22 @@ from core.exceptions import (
     ErrorContext,
 )
 
-# Setup monitoring configuration
+# Setup monitoring configuration first
 monitoring_config = load_monitoring_config_from_env()
 
-# Configure logging
+# Configure logging first
 configure_logging(monitoring_config.logging.to_dict())
+
+# Setup logging with monitoring
+logger = get_logger(__name__)
+
+# Setup configuration
+try:
+    sfm_config = get_config()
+    logger.info(f"Loaded SFM configuration for environment: {sfm_config.environment}")
+except Exception as e:
+    logger.error(f"Failed to load SFM configuration: {e}")
+    sfm_config = None
 
 # Configure metrics
 configure_metrics(MetricConfig(
@@ -81,12 +93,33 @@ configure_metrics(MetricConfig(
     prometheus_enabled=monitoring_config.metrics.prometheus_enabled
 ))
 
-# Setup logging with monitoring
-logger = get_logger(__name__)
-
-# Rate limiting configuration
-RATE_LIMIT_REQUESTS = 100  # requests per minute
-RATE_LIMIT_WINDOW = 60     # seconds
+# Use configuration values for rate limiting
+if sfm_config and sfm_config.api.rate_limit:
+    # Parse rate limit string (e.g., "100/hour")
+    rate_parts = sfm_config.api.rate_limit.split('/')
+    if len(rate_parts) == 2:
+        try:
+            rate_number = int(rate_parts[0])
+            rate_period = rate_parts[1]
+            
+            # Convert to requests per minute
+            if rate_period == 'hour':
+                RATE_LIMIT_REQUESTS = rate_number
+                RATE_LIMIT_WINDOW = 3600  # 1 hour in seconds
+            elif rate_period == 'minute':
+                RATE_LIMIT_REQUESTS = rate_number
+                RATE_LIMIT_WINDOW = 60
+            else:
+                RATE_LIMIT_REQUESTS = rate_number
+                RATE_LIMIT_WINDOW = 60
+        except ValueError:
+            logger.warning(f"Invalid rate limit format: {sfm_config.api.rate_limit}")
+            RATE_LIMIT_REQUESTS = 100
+            RATE_LIMIT_WINDOW = 60
+else:
+    # Default rate limiting
+    RATE_LIMIT_REQUESTS = 100
+    RATE_LIMIT_WINDOW = 60
 rate_limit_storage: DefaultDict[str, Deque[float]] = defaultdict(deque)
 
 def check_rate_limit(request: Request) -> bool:
@@ -112,10 +145,21 @@ def check_rate_limit(request: Request) -> bool:
     
     # Check if limit exceeded
     if len(client_requests) >= RATE_LIMIT_REQUESTS:
+        # Generate appropriate error message based on rate limit window
+        if RATE_LIMIT_WINDOW == 3600:
+            period = "hour"
+            retry_after = str(RATE_LIMIT_WINDOW)
+        elif RATE_LIMIT_WINDOW == 60:
+            period = "minute"
+            retry_after = str(RATE_LIMIT_WINDOW)
+        else:
+            period = f"{RATE_LIMIT_WINDOW} seconds"
+            retry_after = str(RATE_LIMIT_WINDOW)
+        
         raise HTTPException(
             status_code=429,
-            detail=f"Rate limit exceeded. Maximum {RATE_LIMIT_REQUESTS} requests per minute allowed.",
-            headers={"Retry-After": "60"}
+            detail=f"Rate limit exceeded. Maximum {RATE_LIMIT_REQUESTS} requests per {period} allowed.",
+            headers={"Retry-After": retry_after}
         )
     
     # Add current request
@@ -130,16 +174,21 @@ def rate_limit_dependency(request: Request) -> bool:
 app = FastAPI(
     title="SFM (Social Fabric Matrix) API",
     description="REST API for Social Fabric Matrix framework - analyze complex social, economic, and environmental networks",
-    version="1.0.0",
+    version=sfm_config.version if sfm_config else "1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    debug=sfm_config.debug if sfm_config else False
 )
 
-# CORS middleware for cross-origin requests
+# CORS middleware configuration from config
+cors_origins = ["*"]  # Default
+if sfm_config and sfm_config.api.cors_origins:
+    cors_origins = sfm_config.api.cors_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -709,10 +758,111 @@ async def get_api_info() -> Dict[str, Any]:
 
 # ═══ STARTUP EVENT ═══
 
+# ═══ CONFIGURATION ENDPOINTS ═══
+
+@app.get("/config/status", response_model=Dict[str, Any])
+async def get_config_status():
+    """Get configuration status and overview."""
+    try:
+        if sfm_config:
+            # Create a safe view of configuration (no secrets)
+            config_status = {
+                "environment": sfm_config.environment,
+                "debug": sfm_config.debug,
+                "version": sfm_config.version,
+                "database": {
+                    "host": sfm_config.database.host,
+                    "port": sfm_config.database.port,
+                    "name": sfm_config.database.name,
+                    "pool_size": sfm_config.database.pool_size,
+                    "ssl_mode": sfm_config.database.ssl_mode
+                },
+                "cache": {
+                    "backend": sfm_config.cache.backend,
+                    "host": sfm_config.cache.host,
+                    "port": sfm_config.cache.port,
+                    "ttl": sfm_config.cache.ttl
+                },
+                "api": {
+                    "host": sfm_config.api.host,
+                    "port": sfm_config.api.port,
+                    "debug": sfm_config.api.debug,
+                    "rate_limit": sfm_config.api.rate_limit,
+                    "cors_origins": sfm_config.api.cors_origins[:5] if len(sfm_config.api.cors_origins) > 5 else sfm_config.api.cors_origins  # Limit for security
+                },
+                "logging": {
+                    "level": sfm_config.logging.level,
+                    "format": sfm_config.logging.format,
+                    "console_enabled": sfm_config.logging.console_enabled,
+                    "file_enabled": sfm_config.logging.file_enabled
+                },
+                "security": {
+                    "encryption_enabled": sfm_config.security.encryption_enabled,
+                    "audit_enabled": sfm_config.security.audit_enabled,
+                    "session_timeout": sfm_config.security.session_timeout
+                }
+            }
+            return {
+                "status": "loaded",
+                "config": config_status,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "status": "not_loaded",
+                "message": "Configuration not loaded - using defaults",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Error getting configuration status: {e}")
+        return {
+            "status": "error",
+            "message": "An internal error occurred while fetching the configuration status.",
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.post("/config/reload")
+async def reload_config():
+    """Reload configuration from sources."""
+    try:
+        from config.config_manager import reload_config
+        
+        # Reload configuration
+        new_config = reload_config()
+        
+        # Update global reference
+        global sfm_config
+        sfm_config = new_config
+        
+        logger.info("Configuration reloaded successfully")
+        return {
+            "status": "success",
+            "message": "Configuration reloaded successfully",
+            "environment": new_config.environment,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error reloading configuration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An internal error occurred while reloading the configuration."
+        )
+
+# ═══ STARTUP/SHUTDOWN EVENTS ═══
+
 @app.on_event("startup")
 async def startup_event() -> None:
     """Initialize the service on startup."""
     logger.info("SFM API starting up...")
+    
+    # Log configuration status
+    if sfm_config:
+        logger.info(f"Configuration loaded - Environment: {sfm_config.environment}")
+        logger.info(f"API will run on {sfm_config.api.host}:{sfm_config.api.port}")
+        logger.info(f"Database: {sfm_config.database.host}:{sfm_config.database.port}")
+        logger.info(f"Cache: {sfm_config.cache.backend}")
+    else:
+        logger.warning("No configuration loaded - using defaults")
     
     # Initialize the service
     service = get_sfm_service()
@@ -740,4 +890,21 @@ async def shutdown_event() -> None:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    
+    # Use configuration values if available
+    if sfm_config:
+        host = sfm_config.api.host
+        port = sfm_config.api.port
+        debug = sfm_config.api.debug
+        
+        logger.info(f"Starting SFM API server on {host}:{port} (debug={debug})")
+        uvicorn.run(
+            app, 
+            host=host, 
+            port=port, 
+            reload=debug,
+            log_level="info" if sfm_config.logging.level == "INFO" else "debug"
+        )
+    else:
+        logger.info("Starting SFM API server with defaults")
+        uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

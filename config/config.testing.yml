@@ -1,0 +1,46 @@
+# Testing environment configuration
+# Overrides for testing environment
+
+environment: testing
+debug: false
+
+# Database configuration for testing
+database:
+  host: localhost
+  port: 5432
+  name: sfm_test_db
+  username: sfm_test_user
+  pool_size: 2
+  timeout: 5
+  ssl_mode: disable
+  max_connections: 10
+
+# Cache configuration for testing
+cache:
+  backend: memory
+  ttl: 300  # 5 minutes
+  max_size: 100
+
+# API configuration for testing
+api:
+  host: 127.0.0.1
+  port: 8001
+  debug: false
+  cors_origins:
+    - "http://localhost:3000"
+  rate_limit: "10000/hour"  # Very permissive for testing
+  request_timeout: 5
+  max_request_size: 1048576  # 1MB
+
+# Logging configuration for testing
+logging:
+  level: ERROR
+  format: text
+  file_enabled: false
+  console_enabled: true
+
+# Security configuration for testing
+security:
+  encryption_enabled: false
+  audit_enabled: false
+  session_timeout: 600  # 10 minutes

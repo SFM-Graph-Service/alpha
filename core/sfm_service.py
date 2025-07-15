@@ -87,6 +87,8 @@ from core.exceptions import (
     create_validation_error,
     create_node_creation_error,
 )
+from config.config_manager import get_config, SFMConfig
+from config.secrets_manager import SecretsManagerFactory
 from core.security_validators import (
     validate_and_sanitize_node_data,
     SecurityValidationError,
@@ -304,6 +306,7 @@ class ServiceHealth:
 
 
 @dataclass
+@dataclass
 class SFMServiceConfig:
     """Configuration for SFM Service."""
 
@@ -315,6 +318,36 @@ class SFMServiceConfig:
     log_level: str = "INFO"
     max_graph_size: int = DEFAULT_GRAPH_SIZE_LIMIT
     query_timeout: int = DEFAULT_QUERY_TIMEOUT
+    
+    # New configuration fields that can be overridden
+    use_global_config: bool = True
+    global_config: Optional[SFMConfig] = None
+    
+    @classmethod
+    def from_global_config(cls, global_config: Optional[SFMConfig] = None) -> 'SFMServiceConfig':
+        """Create service config from global configuration.
+        
+        Args:
+            global_config: Global configuration object, or None to load from default
+            
+        Returns:
+            SFMServiceConfig: Service configuration
+        """
+        if global_config is None:
+            global_config = get_config()
+        
+        return cls(
+            storage_backend="networkx",  # Default for now
+            auto_sync=True,
+            validation_enabled=True,
+            cache_queries=global_config.cache.backend != "memory",
+            enable_logging=global_config.logging.console_enabled,
+            log_level=global_config.logging.level,
+            max_graph_size=DEFAULT_GRAPH_SIZE_LIMIT,
+            query_timeout=DEFAULT_QUERY_TIMEOUT,
+            use_global_config=True,
+            global_config=global_config
+        )
 
 
 # ═══ MAIN SERVICE CLASS ═══
@@ -336,7 +369,16 @@ class SFMService:
         Args:
             config: Service configuration options
         """
-        self.config = config or SFMServiceConfig()
+        # Load configuration - use global config if not provided
+        if config is None:
+            try:
+                global_config = get_config()
+                self.config = SFMServiceConfig.from_global_config(global_config)
+            except Exception as e:
+                logger.warning(f"Failed to load global configuration: {e}")
+                self.config = SFMServiceConfig()
+        else:
+            self.config = config
 
         # Setup logging
         if self.config.enable_logging:

@@ -17,3 +17,4 @@ bleach
 cachetools
 redis
 prometheus-client
+PyYAML

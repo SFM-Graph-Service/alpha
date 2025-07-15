@@ -75,8 +75,12 @@ class TestAPIRateLimiting(unittest.TestCase):
         request = MagicMock()
         request.client.host = "127.0.0.1"
         
+        # Import rate limiting constants to use the current configuration
+        from api.sfm_api import RATE_LIMIT_WINDOW
+        
         # Manually add old entries to simulate expired requests
-        old_time = time.time() - 70  # 70 seconds ago (past the 60-second window)
+        # Make sure the old entries are older than the rate limit window
+        old_time = time.time() - (RATE_LIMIT_WINDOW + 10)  # Beyond the rate limit window
         rate_limit_storage[request.client.host] = deque([old_time] * RATE_LIMIT_REQUESTS)
         
         # Should be allowed since old entries are expired
