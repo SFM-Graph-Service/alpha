@@ -111,48 +111,59 @@ class AuthTestUtils:
     @staticmethod
     def setup_auth_mocks(app):
         """Set up authentication mocks for testing."""
-        # Create a test user
-        test_user = AuthTestUtils.create_test_user()
+        # Create a test user with admin permissions (has access to everything)
+        test_user = AuthTestUtils.create_test_user(role=Role.ADMIN)
         
-        # Mock the current user dependency function - no credentials needed
-        def mock_get_current_user(credentials=None):
+        # Clear any existing overrides
+        app.dependency_overrides.clear()
+        
+        # Mock all authentication-related dependencies
+        def mock_auth_dependency():
             return test_user
         
-        # Mock the validate_input dependency
-        def mock_validate_input(*args, **kwargs):
+        def mock_validate_input(request=None):
             return True
         
-        # Override FastAPI dependencies
+        # Override the core authentication functions
         from core.security import get_current_user, validate_input
-        app.dependency_overrides[get_current_user] = mock_get_current_user
+        app.dependency_overrides[get_current_user] = mock_auth_dependency
         app.dependency_overrides[validate_input] = mock_validate_input
         
-        # Mock the HTTPBearer dependency so it doesn't require auth headers
+        # Mock HTTPBearer to not require actual HTTP headers
         from fastapi.security import HTTPBearer
         from fastapi.security.http import HTTPAuthorizationCredentials
         
         def mock_http_bearer():
-            return HTTPAuthorizationCredentials(scheme="Bearer", credentials="test_token")
+            return HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token")
         
-        app.dependency_overrides[HTTPBearer()] = mock_http_bearer
-        
-        # Mock the auth_manager methods directly
+        # Use unittest.mock to patch authentication components
         import unittest.mock
+        
+        # Mock the auth manager's methods
         unittest.mock.patch.object(auth_manager, 'get_current_user', return_value=test_user).start()
         
-        # Mock the entire require_permission to return a function that just returns the test user
-        def mock_require_permission(permission):
-            def permission_checker(*args, **kwargs):
-                return test_user
-            return permission_checker
+        # Mock require_permission to always return a function that returns test_user
+        def mock_require_permission_method(permission):
+            return lambda: test_user
         
-        def mock_require_role(role):
-            def role_checker(*args, **kwargs):
-                return test_user
-            return role_checker
+        unittest.mock.patch.object(auth_manager, 'require_permission', side_effect=mock_require_permission_method).start()
         
-        unittest.mock.patch.object(auth_manager, 'require_permission', side_effect=mock_require_permission).start()
-        unittest.mock.patch.object(auth_manager, 'require_role', side_effect=mock_require_role).start()
+        # Mock require_role to always return a function that returns test_user
+        def mock_require_role_method(role):
+            return lambda: test_user
+        
+        unittest.mock.patch.object(auth_manager, 'require_role', side_effect=mock_require_role_method).start()
+        
+        # Mock the module-level functions
+        unittest.mock.patch('core.security.require_permission', side_effect=mock_require_permission_method).start()
+        unittest.mock.patch('core.security.require_role', side_effect=mock_require_role_method).start()
+        unittest.mock.patch('api.sfm_api.require_permission', side_effect=mock_require_permission_method).start()
+        unittest.mock.patch('api.sfm_api.require_role', side_effect=mock_require_role_method).start()
+        
+        # Mock HTTPBearer to not require authorization headers
+        unittest.mock.patch('fastapi.security.HTTPBearer.__call__', return_value=mock_http_bearer()).start()
+        
+        return test_user
 
 
 class TestSFMAPIHealth(unittest.TestCase):
@@ -275,6 +286,11 @@ class TestSFMAPIStatistics(unittest.TestCase):
         self.mock_service.analyze_centrality.return_value = mock_centrality
         
         response = self.client.get("/analytics/centrality?centrality_type=betweenness&limit=10")
+        
+        # Debug response on failure
+        if response.status_code != status.HTTP_200_OK:
+            print(f"DEBUG: Status code: {response.status_code}")
+            print(f"DEBUG: Response: {response.text}")
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
