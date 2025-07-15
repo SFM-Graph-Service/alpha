@@ -152,6 +152,11 @@ class AuthTestUtils:
         unittest.mock.patch('api.sfm_api.require_role', side_effect=mock_require_role_method).start()
         
         # Mock HTTPBearer to not require authorization headers
+        from fastapi.security.http import HTTPAuthorizationCredentials
+        
+        def mock_http_bearer():
+            return HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token")
+        
         unittest.mock.patch('fastapi.security.HTTPBearer.__call__', return_value=mock_http_bearer()).start()
         
         return test_user
@@ -428,18 +433,29 @@ class TestSFMAPIActors(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.client = TestClient(app)
         self.mock_service = Mock(spec=SFMService)
         
-        # Mock service dependency
-        app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        # Set up service mocks BEFORE creating TestClient
+        self.get_sfm_service_patcher, self.api_get_sfm_service_patcher = AuthTestUtils.setup_service_mocks(app, self.mock_service)
         
         # Set up authentication mocks
         AuthTestUtils.setup_auth_mocks(app)
+        
+        # Create TestClient AFTER setting up mocks
+        self.client = TestClient(app)
 
     def tearDown(self):
         """Clean up after tests."""
         app.dependency_overrides.clear()
+        # Stop the service patches
+        self.get_sfm_service_patcher.stop()
+        self.api_get_sfm_service_patcher.stop()
+        # Reset service singleton after each test
+        from core.sfm_service import reset_sfm_service
+        reset_sfm_service()
+        # Stop all patches
+        import unittest.mock
+        unittest.mock.patch.stopall()
 
     def test_create_actor_success(self):
         """Test successful actor creation."""
