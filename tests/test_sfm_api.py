@@ -129,6 +129,54 @@ class AuthTestUtils:
         app.dependency_overrides[get_current_user] = mock_auth_dependency
         app.dependency_overrides[validate_input] = mock_validate_input
         
+        # Mock the auth manager's methods
+        import unittest.mock
+        unittest.mock.patch.object(auth_manager, 'get_current_user', return_value=test_user).start()
+        
+        # Mock require_permission to always return a function that returns test_user
+        def mock_require_permission_method(permission):
+            return lambda: test_user
+        
+        unittest.mock.patch.object(auth_manager, 'require_permission', side_effect=mock_require_permission_method).start()
+        
+        # Mock require_role to always return a function that returns test_user
+        def mock_require_role_method(role):
+            return lambda: test_user
+        
+        unittest.mock.patch.object(auth_manager, 'require_role', side_effect=mock_require_role_method).start()
+        
+        # Mock the module-level functions
+        unittest.mock.patch('core.security.require_permission', side_effect=mock_require_permission_method).start()
+        unittest.mock.patch('core.security.require_role', side_effect=mock_require_role_method).start()
+        unittest.mock.patch('api.sfm_api.require_permission', side_effect=mock_require_permission_method).start()
+        unittest.mock.patch('api.sfm_api.require_role', side_effect=mock_require_role_method).start()
+        
+        # Mock HTTPBearer to not require authorization headers
+        unittest.mock.patch('fastapi.security.HTTPBearer.__call__', return_value=mock_http_bearer()).start()
+        
+        return test_user
+
+    @staticmethod
+    def setup_service_mocks(app, mock_service):
+        """Set up service mocks for testing."""
+        # Reset service singleton before each test
+        from core.sfm_service import reset_sfm_service
+        reset_sfm_service()
+        
+        # Mock service dependency
+        app.dependency_overrides[get_sfm_service_dependency] = lambda: mock_service
+        
+        # Also patch the get_sfm_service function to prevent startup event from creating real service
+        import unittest.mock
+        get_sfm_service_patcher = unittest.mock.patch('core.sfm_service.get_sfm_service', return_value=mock_service)
+        get_sfm_service_patcher.start()
+        
+        # Also patch it in the API module
+        api_get_sfm_service_patcher = unittest.mock.patch('api.sfm_api.get_sfm_service', return_value=mock_service)
+        api_get_sfm_service_patcher.start()
+        
+        return get_sfm_service_patcher, api_get_sfm_service_patcher
+        
         # Mock HTTPBearer to not require actual HTTP headers
         from fastapi.security import HTTPBearer
         from fastapi.security.http import HTTPAuthorizationCredentials
@@ -171,18 +219,26 @@ class TestSFMAPIHealth(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.client = TestClient(app)
         self.mock_service = Mock(spec=SFMService)
         
-        # Mock service dependency
-        app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        # Set up service mocks BEFORE creating TestClient
+        self.get_sfm_service_patcher, self.api_get_sfm_service_patcher = AuthTestUtils.setup_service_mocks(app, self.mock_service)
         
         # Set up authentication mocks
         AuthTestUtils.setup_auth_mocks(app)
+        
+        # Create TestClient AFTER setting up mocks
+        self.client = TestClient(app)
 
     def tearDown(self):
         """Clean up after tests."""
         app.dependency_overrides.clear()
+        # Stop the service patches
+        self.get_sfm_service_patcher.stop()
+        self.api_get_sfm_service_patcher.stop()
+        # Reset service singleton after each test
+        from core.sfm_service import reset_sfm_service
+        reset_sfm_service()
         # Stop all patches
         import unittest.mock
         unittest.mock.patch.stopall()
@@ -236,18 +292,29 @@ class TestSFMAPIStatistics(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.client = TestClient(app)
         self.mock_service = Mock(spec=SFMService)
         
-        # Mock service dependency
-        app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        # Set up service mocks BEFORE creating TestClient
+        self.get_sfm_service_patcher, self.api_get_sfm_service_patcher = AuthTestUtils.setup_service_mocks(app, self.mock_service)
         
         # Set up authentication mocks
         AuthTestUtils.setup_auth_mocks(app)
+        
+        # Create TestClient AFTER setting up mocks
+        self.client = TestClient(app)
 
     def tearDown(self):
         """Clean up after tests."""
         app.dependency_overrides.clear()
+        # Stop the service patches
+        self.get_sfm_service_patcher.stop()
+        self.api_get_sfm_service_patcher.stop()
+        # Reset service singleton after each test
+        from core.sfm_service import reset_sfm_service
+        reset_sfm_service()
+        # Stop all patches
+        import unittest.mock
+        unittest.mock.patch.stopall()
 
     def test_get_statistics(self):
         """Test getting graph statistics."""
