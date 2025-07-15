@@ -353,10 +353,10 @@ class InputValidator:
         # Allow no tags at all and strip everything
         cleaned = bleach.clean(text, tags=[], attributes={}, strip=True)
         
-        # Additional cleaning for script content
-        cleaned = re.sub(r'<script[^>]*>.*?</script>', '', cleaned, flags=re.IGNORECASE | re.DOTALL)
-        cleaned = re.sub(r'javascript:', '', cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r'on\w+\s*=', '', cleaned, flags=re.IGNORECASE)
+        # Additional cleaning for script content using bleach
+        cleaned = bleach.clean(cleaned, tags=[], attributes={}, strip=True)
+        
+        return cleaned
         
         return cleaned
     
