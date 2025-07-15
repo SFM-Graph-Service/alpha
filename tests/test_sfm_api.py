@@ -1153,6 +1153,17 @@ class TestSFMAPISecurityIntegration(unittest.TestCase):
         self.client = TestClient(app)
         self.mock_service = Mock(spec=SFMService)
         
+        # Configure mock service to return proper values
+        self.mock_service.get_health.return_value = ServiceHealth(
+            status=ServiceStatus.HEALTHY,
+            timestamp=datetime.now().isoformat(),
+            version="1.0.0",
+            backend="networkx",
+            node_count=10,
+            relationship_count=5,
+            last_operation="test_operation"
+        )
+        
         # Mock service dependency
         app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
 
