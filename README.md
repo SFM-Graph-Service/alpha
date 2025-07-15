@@ -43,11 +43,10 @@ Built with modern software engineering practices, this framework provides a robu
 - **Temporal Analysis**: Time-series tracking, trend analysis, change detection
 - **Validation Analysis**: System integrity checking, relationship validation, enum compliance
 
-### 🗄️ **Flexible Storage and API Layer**
+### 🗄️ **Flexible Storage **
 - **Abstract Repository Pattern**: Extensible to multiple storage backends (NetworkX, Neo4j-ready)
 - **Type-Safe Operations**: Strongly-typed repositories for different entity types with validation
 - **CRUD Operations**: Full create, read, update, delete functionality with transaction support
-- **RESTful API**: FastAPI-based service layer for web applications and external integrations
 - **Graph Persistence**: Save/load complete graph structures with relationship preservation
 
 ### 🛠️ **Enhanced Validation and Type Safety**
@@ -57,19 +56,11 @@ Built with modern software engineering practices, this framework provides a robu
 - **Flow Validation**: Validates flow nature and type combinations for system integrity
 - **Institution Layer Validation**: Enforces Hayden's three-layer institutional framework
 
-### 📈 **Real-World Applications**
-- **Commodity Market Analysis**: Forecast price changes based on policy and market conditions
-- **Policy Impact Assessment**: Analyze ripple effects of regulatory changes through system networks
-- **Supply Chain Resilience**: Identify vulnerabilities, dependencies, and critical pathways
-- **Economic Development Planning**: Model regional development scenarios and policy outcomes
-- **Institutional Analysis**: Study formal and informal institutional interactions and changes
-
 ## Installation
 
 ### Requirements
 - Python 3.8+
 - NetworkX 3.0+
-- FastAPI (for API services)
 - Neo4j (optional, for graph database backend)
 - Additional dependencies listed in requirements.txt
 
@@ -169,245 +160,6 @@ analysis = service.get_network_analysis()
 health = service.get_service_health()
 ```
 
-### Advanced Example: Grain Market Analysis
-```python
-from examples.us_grain_export_example import create_us_grain_market_graph
-from core.sfm_models import SFMGraph
-from core.sfm_enums import ResourceType
-from db.sfm_dao import SFMRepositoryFactory
-
-# Create repository and graph container
-repo = SFMRepositoryFactory.create_repository("networkx")
-sfm_graph = SFMGraph(
-    name="US Grain Market Analysis",
-    description="Comprehensive model for grain price forecasting and policy analysis"
-)
-
-# Build complex graph with entities and relationships
-us_grain_graph = create_us_grain_market_graph(repo, sfm_graph)
-
-# Create query engine for sophisticated analysis
-query_engine = SFMQueryFactory.create_query_engine(us_grain_graph, "networkx")
-
-# Perform comprehensive system analysis
-vulnerabilities = query_engine.system_vulnerability_analysis()
-grain_flows = query_engine.trace_resource_flows(ResourceType.PRODUCED)
-network_density = query_engine.calculate_network_density()
-
-# Analyze policy impacts across the system
-for policy_id, policy in us_grain_graph.policies.items():
-    impact = query_engine.analyze_policy_impact(policy_id, impact_radius=3)
-    affected_nodes = impact.get('total_affected_nodes', 0)
-    print(f"{policy.label}: affects {affected_nodes} nodes in the system")
-
-# Identify critical system components
-bridges = query_engine.find_bridges()
-central_nodes = query_engine.get_most_central_nodes(limit=5)
-
-print(f"System vulnerability points: {vulnerabilities}")
-print(f"Network density: {network_density:.3f}")
-print(f"Critical bridges: {bridges}")
-```
-
-### RESTful API Usage
-```python
-import httpx
-
-# Start the API server (in separate terminal)
-# uvicorn api.sfm_api:app --reload
-
-# Use the REST API
-async with httpx.AsyncClient() as client:
-    # Create entities via API
-    actor_response = await client.post(
-        "http://localhost:8000/actors",
-        json={"label": "USDA", "sector": "Government"}
-    )
-    
-    # Get analysis results
-    analysis_response = await client.get("http://localhost:8000/analysis/network")
-    
-    # Retrieve graph data
-    graph_response = await client.get("http://localhost:8000/graph")
-```
-
-### Running the Examples
-```bash
-# From workspace root
-python examples/us_grain_export_example.py
-
-# Or using module syntax
-python -m examples.us_grain_export_example
-
-# For running from subfolders, examples include path resolution
-python examples/us_grain_export_example.py  # Works from any directory
-```
-
-## Advanced Examples
-
-The framework includes sophisticated examples that demonstrate the full analytical power of the Social Fabric Matrix methodology for complex real-world systems. These examples showcase advanced features including temporal dynamics, cognitive frameworks, multi-stakeholder analysis, and comprehensive policy evaluation.
-
-### 1. Smart City Urban Planning (`smart_city_urban_planning_example.py`)
-
-**Scenario**: Comprehensive smart city initiative involving multiple stakeholders, technology systems, and policy instruments working together to achieve sustainable urban development goals.
-
-**Advanced Features Demonstrated**:
-- **42 nodes across 6 entity types**: 7 actors, 3 institutions, 7 resources, 3 policies, 4 flows, 6 indicators, 3 technology systems, 3 policy instruments
-- **Temporal dynamics**: Policy rollout, crisis response, and technology adoption patterns
-- **Technology readiness levels**: IoT sensors (TRL 8), AI traffic systems (TRL 7), green building tech (TRL 9)
-- **Cognitive frameworks**: Government efficiency, community quality of life, and innovation frameworks
-- **Multi-dimensional analysis**: Network centrality, vulnerability assessment, stakeholder power distribution
-
-**Key Stakeholders**: City Government, Urban Planning Department, Tech Companies, Community Groups, Environmental NGOs, Research Universities
-
-**Policy Analysis**: Smart city master plan implementation, green building standards enforcement, data privacy regulations
-
-```bash
-python examples/smart_city_urban_planning_example.py
-```
-
-**Sample Output**:
-```
-🎯 Most Central Actors (Betweenness Centrality):
-  • Smart Infrastructure Corp: 0.011
-  • Neighborhood Associations: 0.001
-
-🔬 Technology Maturity Analysis:
-  • IoT Environmental Sensor Network: TRL 8 (0.77 compatibility)
-  • AI Traffic Management System: TRL 7 (0.82 compatibility)
-  • Smart Green Building Technology: TRL 9 (0.82 compatibility)
-
-⏰ Temporal Change Analysis:
-  • Smart City Investment Flow: EXPONENTIAL dynamics
-  • Research to Practice Knowledge Transfer: LOGISTIC dynamics
-```
-
-### 2. Global Supply Chain Resilience (`global_supply_chain_resilience_example.py`)
-
-**Scenario**: Global supply chain ecosystem with multiple tiers, regions, and stakeholders working together to maintain operational resilience in the face of global disruptions.
-
-**Advanced Features Demonstrated**:
-- **68 nodes across 9 entity types**: 10 actors, 5 institutions, 10 resources, 4 policies, 6 flows, 11 indicators, 4 technology systems, 4 policy instruments, 3 processes, 2 feedback loops
-- **Crisis and recovery dynamics**: Exponential disruption patterns, logistic recovery models
-- **Multi-tier analysis**: OEMs, Tier 1/2 suppliers, raw material providers, logistics networks
-- **Technology integration**: Blockchain platforms, AI forecasting, IoT tracking, digital twins
-- **Comprehensive resilience metrics**: 8 value categories including performance, economic, technological, social, environmental, institutional, resilience, and diversity
-
-**Key Stakeholders**: Automotive OEMs, Electronics Manufacturers, Global Suppliers, Logistics Providers, Financial Services, Trade Organizations
-
-**Policy Analysis**: Supply chain transparency mandates, diversification incentives, resilience standards, digital trade facilitation
-
-```bash
-python examples/global_supply_chain_resilience_example.py
-```
-
-**Sample Output**:
-```
-🎯 Most Central Supply Chain Actors:
-  • Global Automotive OEM: 0.007
-  • Tier 1 Component Supplier (Asia): 0.005
-  • Semiconductor Foundry: 0.003
-
-🚧 Supply Chain Bottleneck Identification:
-  • Material flow bottlenecks: 6 identified
-  • Information flow bottlenecks: 6 identified
-  • Financial flow bottlenecks: 6 identified
-
-⏰ Crisis and Recovery Dynamics:
-  • Critical Component Flow: EXPONENTIAL dynamics
-  • Raw Material Supply Flow: LOGISTIC dynamics
-  • Cross-Border Payment Flows: EXPONENTIAL dynamics
-```
-
-### 3. Healthcare System Policy Analysis (`healthcare_system_policy_example.py`)
-
-**Scenario**: Healthcare system policy evaluation involving patients, providers, payers, regulators, and technology systems working together to improve health outcomes through coordinated policy interventions.
-
-**Advanced Features Demonstrated**:
-- **69 nodes across 8 entity types**: 10 actors, 5 institutions, 10 resources, 4 policies, 6 flows, 12 indicators, 4 technology systems, 4 policy instruments, 3 processes
-- **Cognitive frameworks**: Evidence-based medicine, health economics, patient-centered care, prevention frameworks
-- **Value systems**: Medical ethics, population health values, patient rights and autonomy
-- **Behavioral patterns**: Technology adoption, clinical guideline adherence, preventive care seeking, collaborative coordination
-- **Multi-dimensional outcomes**: Health, equity, economic, technological, and social indicators
-
-**Key Stakeholders**: Primary Care Physicians, Hospital Systems, Health Insurance Companies, Public Health Agencies, Patient Advocacy Groups, Health Tech Companies, Research Institutions
-
-**Policy Analysis**: Universal coverage expansion, quality payment programs, interoperability mandates, prevention investments
-
-```bash
-python examples/healthcare_system_policy_example.py
-```
-
-**Sample Output**:
-```
-⚡ Healthcare Stakeholder Power Distribution:
-  • Regional Hospital Systems: 0.91 average power
-  • Health Research Institutions: 0.89 average power
-  • Health Insurance Companies: 0.88 average power
-
-🔬 Healthcare Technology Integration Assessment:
-  • Electronic Health Records System: TRL 9 (0.74 compatibility)
-  • AI-Powered Diagnostic Support: TRL 7 (0.68 compatibility)
-  • Comprehensive Telehealth Platform: TRL 8 (0.79 compatibility)
-
-📊 Health Outcome Indicators by Category:
-  Health Indicators:
-    • Clinical Quality Outcomes: 72.0 → 85.0
-    • Patient Safety Incidents: 12.5 → 6.0
-    • Preventable Hospitalizations: 45.0 → 25.0
-```
-
-### Example Comparison and Use Cases
-
-| Example | Domain | Nodes | Focus | Key Features |
-|---------|--------|-------|-------|--------------|
-| **Smart City** | Urban Planning | 42 | Technology Integration & Governance | Temporal dynamics, IoT systems, multi-stakeholder coordination |
-| **Supply Chain** | Global Commerce | 68 | Resilience & Crisis Response | Multi-tier networks, disruption modeling, bottleneck analysis |
-| **Healthcare** | Policy Analysis | 69 | Outcomes & Quality Improvement | Cognitive frameworks, value systems, behavioral patterns |
-
-### Running Advanced Examples
-
-All examples include comprehensive analysis output and can be run independently:
-
-```bash
-# Smart city planning with technology integration
-python examples/smart_city_urban_planning_example.py
-
-# Global supply chain resilience analysis
-python examples/global_supply_chain_resilience_example.py
-
-# Healthcare system policy evaluation
-python examples/healthcare_system_policy_example.py
-```
-
-### Customizing Examples
-
-Each example can be easily modified to explore different scenarios:
-
-```python
-# Modify stakeholder power distributions
-actor.power_resources = {
-    "technological": 0.95,
-    "financial": 0.8,
-    "regulatory": 0.6
-}
-
-# Adjust temporal dynamics parameters
-temporal_dynamics = TemporalDynamics(
-    start_time=baseline_period,
-    function_type=TemporalFunctionType.LOGISTIC,
-    parameters={"growth_rate": 0.4, "capacity": 100.0}
-)
-
-# Change policy effectiveness measures
-policy_instrument.effectiveness_measure = 0.85
-
-# Modify technology readiness levels
-tech_system.maturity = TechnologyReadinessLevel.PROTOTYPE_DEMONSTRATION
-```
-
-These examples serve as comprehensive templates for building domain-specific SFM models and demonstrate the framework's capability to handle complex, multi-stakeholder systems with sophisticated analytical requirements.
-
 ## Architecture
 
 ### Core Components
@@ -422,8 +174,6 @@ SFM-Graph-Service/
 │   └── sfm_persistence.py         # Graph persistence and serialization utilities
 ├── db/                            # Data access layer
 │   └── sfm_dao.py                 # Repository pattern implementation (CRUD operations)
-├── api/                           # RESTful web service layer
-│   └── sfm_api.py                 # FastAPI-based REST endpoints
 ├── examples/                      # Working examples and demonstrations
 │   ├── us_grain_export_example.py # Comprehensive grain market model
 │   └── us_grain_market_forecast.py # Market forecasting example
@@ -433,7 +183,6 @@ SFM-Graph-Service/
 │   ├── test_sfm_query.py          # Unit tests for query engine
 │   ├── test_sfm_service.py        # Unit tests for service layer
 │   ├── test_enum_validation.py    # Tests for enum validation system
-│   └── test_sfm_api.py            # API endpoint tests
 ├── docs/                          # Documentation and design materials
 │   ├── sfm-overview.md            # Theoretical framework overview
 │   ├── SFMSuiteDesignProposal.md  # Comprehensive design documentation
@@ -451,7 +200,6 @@ SFM-Graph-Service/
 3. **Type Safety**: Strong typing with comprehensive validation ensures data integrity and developer experience
 4. **Performance**: Optimized for both small prototypes and large-scale production analysis
 5. **Hayden Compliance**: Faithful implementation of SFM theoretical framework with methodological rigor
-6. **API-First Design**: RESTful service layer enables web applications and external system integration
 7. **Validation-Driven**: Comprehensive enum validation ensures system integrity and prevents modeling errors
 
 ## Data Model
@@ -543,18 +291,14 @@ python -m unittest tests.test_sfm_query -v
 python -m unittest tests.test_sfm_service -v
 python -m unittest tests.test_enum_validation -v
 
-# Run API tests
-python -m unittest tests.test_sfm_api -v
-```
 
 ### Test Categories
 - **Unit Tests**: Individual component functionality (models, enums, repositories)
-- **Integration Tests**: Component interaction verification (service layer, API endpoints)
+- **Integration Tests**: Component interaction verification (service layer)
 - **Validation Tests**: Comprehensive enum validation and type safety verification
 - **Performance Tests**: Scalability and efficiency validation for large graphs
 - **Edge Case Tests**: Error handling, boundary conditions, and robustness testing
 - **SFM Alignment Tests**: Validation of Hayden's methodology implementation
-- **API Tests**: RESTful service endpoint functionality and response validation
 
 ### Test Coverage Areas
 - **Data Models**: Entity creation, validation, and relationship management
@@ -562,66 +306,6 @@ python -m unittest tests.test_sfm_api -v
 - **Query Engine**: Network analysis, policy impact assessment, and flow tracking
 - **Service Layer**: High-level operations, configuration management, and health monitoring
 - **Enum Validation**: Cross-enum dependencies, relationship rules, and contextual validation
-- **API Layer**: HTTP endpoints, request/response handling, and error management
-
-## Examples and Demonstrations
-
-### US Grain Market Analysis
-The [`examples/us_grain_export_example.py`](examples/us_grain_export_example.py) provides a comprehensive demonstration of framework capabilities:
-
-**Model Components:**
-- **Actors**: USDA (government), Farmers (agriculture), Traders (private sector)
-- **Institutions**: US Government, Trade Organizations with proper layer classification
-- **Resources**: Grain (produced goods), Land (natural resources) with type validation
-- **Policies**: Grain subsidies, Export tariffs with authority attribution
-- **Flows**: Export flows, Financial flows with directional nature tracking
-- **Indicators**: Grain prices, Production levels with quantitative values
-
-**Analysis Capabilities Demonstrated:**
-- Actor centrality analysis and influence measurement
-- Policy impact assessment with multi-hop propagation
-- Resource flow tracing and bottleneck identification
-- Network density calculation and structural analysis
-- Bridge identification for system resilience assessment
-
-**Running the Example:**
-```bash
-# Execute the complete grain market analysis
-python examples/us_grain_export_example.py
-
-# Expected output includes:
-# - Graph creation statistics (entities and relationships)
-# - Network analysis results (centrality, density, vulnerabilities)
-# - Policy impact assessments
-# - Resource flow analysis
-# - Structural component identification
-```
-
-### Market Forecasting Example
-The [`examples/us_grain_market_forecast.py`](examples/us_grain_market_forecast.py) demonstrates:
-- Time-series integration with SFM analysis
-- Scenario comparison for policy alternatives
-- Predictive modeling using network structure
-- Integration with external data sources
-
-### API Service Demonstration
-Start the RESTful API service for web integration:
-```bash
-# Start the FastAPI server
-uvicorn api.sfm_api:app --reload --host 0.0.0.0 --port 8000
-
-# Access interactive documentation
-open http://localhost:8000/docs
-```
-
-**Available API Endpoints:**
-- `POST /actors`: Create new actor entities
-- `POST /institutions`: Create new institutions with layer validation
-- `POST /relationships`: Create validated relationships between entities
-- `GET /analysis/network`: Retrieve network analysis results
-- `GET /analysis/policy/{policy_id}`: Get policy impact analysis
-- `GET /graph`: Export complete graph structure
-- `GET /health`: Service health and status information
 
 ## Automated Workflows
 
@@ -658,7 +342,6 @@ This project includes comprehensive GitHub Actions workflows for automated testi
 ### 📚 **Documentation Validation** (`documentation.yml`)
 - **Docstring Validation**: Automated docstring quality and consistency checks
 - **Markdown Validation**: Documentation syntax and link validation
-- **API Documentation**: Endpoint documentation consistency verification
 - **Sphinx Documentation**: Automated documentation building and testing
 - **Documentation Coverage**: Documentation completeness analysis
 
@@ -695,11 +378,6 @@ All workflows are configured to run on:
 ### Module Documentation
 - **[Core Module](core/README.md)**: Data models, query engine, and service layer documentation
 - **[Database Module](db/README.md)**: Repository patterns, type-safe operations, and storage backends
-
-### API Documentation
-When running the API service, interactive documentation is available at:
-- **Swagger UI**: `http://localhost:8000/docs`
-- **ReDoc**: `http://localhost:8000/redoc`
 
 ### Theoretical Foundation
 
@@ -774,7 +452,6 @@ python examples/us_grain_export_example.py
 **Code Quality Standards:**
 - Follow existing code structure and naming conventions
 - Add comprehensive tests for new functionality (maintain 100% test coverage)
-- Update documentation for API changes and new features
 - Ensure compatibility with existing examples and use cases
 - Use type hints and docstrings for all public methods
 - Follow PEP 8 style guidelines with pylint validation
@@ -784,13 +461,12 @@ python examples/us_grain_export_example.py
 - Include integration tests for component interactions
 - Add validation tests for new enum types or relationship rules
 - Test edge cases and error conditions
-- Verify API endpoints with request/response testing
+
 
 **Documentation Standards:**
 - Update relevant README sections for new features
 - Add docstrings following Google style conventions
 - Include usage examples in docstrings
-- Update API documentation for new endpoints
 - Maintain theoretical alignment documentation for SFM methodology changes
 
 ### Contribution Areas
@@ -870,7 +546,6 @@ This project is licensed under the GNU General Public License v2.0 - see the [LI
 - [x] Comprehensive SFM data model with type safety
 - [x] NetworkX-based graph storage and analysis
 - [x] Advanced query engine with network analysis capabilities
-- [x] RESTful API service layer with FastAPI
 - [x] Comprehensive enum validation system
 - [x] Service layer facade for simplified usage
 - [x] Extensive test suite (491 passing tests)

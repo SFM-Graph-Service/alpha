@@ -10,7 +10,6 @@ Key Features:
 - Rich error context including entity IDs, operation details, timestamps
 - Consistent error codes and messages
 - Support for error remediation suggestions
-- Structured error data for API responses
 """
 
 import uuid
@@ -49,13 +48,7 @@ class ErrorCode(str, Enum):
     DATABASE_CONNECTION_ERROR = "DATABASE_CONNECTION_ERROR"
     DATABASE_TRANSACTION_ERROR = "DATABASE_TRANSACTION_ERROR"
     DATABASE_PERSISTENCE_ERROR = "DATABASE_PERSISTENCE_ERROR"
-    
-    # API errors
-    API_REQUEST_ERROR = "API_REQUEST_ERROR"
-    API_AUTHENTICATION_ERROR = "API_AUTHENTICATION_ERROR"
-    API_AUTHORIZATION_ERROR = "API_AUTHORIZATION_ERROR"
-    API_RATE_LIMIT_ERROR = "API_RATE_LIMIT_ERROR"
-    
+
     # Security errors
     SECURITY_VALIDATION_ERROR = "SECURITY_VALIDATION_ERROR"
     PERMISSION_DENIED_ERROR = "PERMISSION_DENIED_ERROR"
@@ -446,77 +439,6 @@ class DatabaseTransactionError(DatabaseError):
             error_code=ErrorCode.DATABASE_TRANSACTION_ERROR,
             context=context,
             remediation="Transaction may have been rolled back. Retry the operation."
-        )
-        self.details.update(details)
-
-
-# API-specific exceptions
-class APIError(SFMError):
-    """Base exception for API-related errors."""
-    
-    def __init__(
-        self,
-        message: str,
-        error_code: ErrorCode = ErrorCode.API_REQUEST_ERROR,
-        http_status_code: int = 400,
-        context: Optional[ErrorContext] = None,
-        remediation: Optional[str] = None
-    ):
-        self.http_status_code = http_status_code
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            context=context,
-            remediation=remediation
-        )
-
-
-class APIRequestError(APIError):
-    """Exception for API request validation failures."""
-    
-    def __init__(
-        self,
-        message: str,
-        request_path: Optional[str] = None,
-        request_method: Optional[str] = None,
-        context: Optional[ErrorContext] = None
-    ):
-        details = {
-            "request_path": request_path,
-            "request_method": request_method
-        }
-        super().__init__(
-            message=message,
-            error_code=ErrorCode.API_REQUEST_ERROR,
-            http_status_code=400,
-            context=context,
-            remediation="Check request format and parameters"
-        )
-        self.details.update(details)
-
-
-class APIRateLimitError(APIError):
-    """Exception for API rate limit exceeded."""
-    
-    def __init__(
-        self,
-        message: str,
-        client_id: Optional[str] = None,
-        limit: Optional[int] = None,
-        reset_time: Optional[datetime] = None,
-        context: Optional[ErrorContext] = None
-    ):
-        details = {
-            "client_id": client_id,
-            "limit": limit,
-            "reset_time": reset_time.isoformat() if reset_time else None
-        }
-        super().__init__(
-            message=message,
-            error_code=ErrorCode.API_RATE_LIMIT_ERROR,
-            http_status_code=429,
-            context=context,
-            remediation="Wait before making more requests or contact support for rate limit increase"
         )
         self.details.update(details)
 

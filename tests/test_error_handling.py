@@ -21,9 +21,6 @@ from core.exceptions import (
     QueryTimeoutError,
     DatabaseConnectionError,
     DatabaseTransactionError,
-    APIError,
-    APIRequestError,
-    APIRateLimitError,
     SecurityValidationError,
     PermissionDeniedError,
     ErrorContext,
@@ -186,30 +183,7 @@ class TestErrorHandlingSystem(unittest.TestCase):
         self.assertEqual(trans_error.details["transaction_id"], "tx_123")
         self.assertIn("transaction", trans_error.remediation.lower())
 
-    def test_api_errors(self):
-        """Test API specific errors."""
-        # API request error
-        request_error = APIRequestError(
-            "Invalid request",
-            request_path="/api/actors",
-            request_method="POST"
-        )
-        self.assertEqual(request_error.error_code, ErrorCode.API_REQUEST_ERROR)
-        self.assertEqual(request_error.http_status_code, 400)
-        self.assertEqual(request_error.details["request_path"], "/api/actors")
-        self.assertEqual(request_error.details["request_method"], "POST")
-        
-        # API rate limit error
-        rate_limit_error = APIRateLimitError(
-            "Rate limit exceeded",
-            client_id="client_123",
-            limit=100
-        )
-        self.assertEqual(rate_limit_error.error_code, ErrorCode.API_RATE_LIMIT_ERROR)
-        self.assertEqual(rate_limit_error.http_status_code, 429)
-        self.assertEqual(rate_limit_error.details["client_id"], "client_123")
-        self.assertEqual(rate_limit_error.details["limit"], 100)
-
+    
     def test_security_errors(self):
         """Test security related errors."""
         # Security validation error

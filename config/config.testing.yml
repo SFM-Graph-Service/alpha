@@ -21,17 +21,6 @@ cache:
   ttl: 300  # 5 minutes
   max_size: 100
 
-# API configuration for testing
-api:
-  host: 127.0.0.1
-  port: 8001
-  debug: false
-  cors_origins:
-    - "http://localhost:3000"
-  rate_limit: "10000/hour"  # Very permissive for testing
-  request_timeout: 5
-  max_request_size: 1048576  # 1MB
-
 # Logging configuration for testing
 logging:
   level: ERROR

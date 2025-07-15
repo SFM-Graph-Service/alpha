@@ -92,32 +92,6 @@ class CacheConfig:
 
 
 @dataclass
-class APIConfig:
-    """API configuration settings."""
-    host: str = "0.0.0.0"
-    port: int = 8000
-    debug: bool = False
-    cors_origins: List[str] = field(default_factory=lambda: ["*"])
-    rate_limit: str = "100/hour"
-    jwt_secret: str = ""
-    request_timeout: int = 30
-    max_request_size: int = 10485760  # 10MB
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
-        return {
-            'host': self.host,
-            'port': self.port,
-            'debug': self.debug,
-            'cors_origins': self.cors_origins,
-            'rate_limit': self.rate_limit,
-            'jwt_secret': self.jwt_secret,
-            'request_timeout': self.request_timeout,
-            'max_request_size': self.max_request_size
-        }
-
-
-@dataclass
 class LoggingConfig:
     """Logging configuration settings."""
     level: str = "INFO"
@@ -169,7 +143,6 @@ class SFMConfig:
     version: str = "1.0.0"
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
-    api: APIConfig = field(default_factory=APIConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
     
@@ -181,7 +154,6 @@ class SFMConfig:
             'version': self.version,
             'database': self.database.to_dict(),
             'cache': self.cache.to_dict(),
-            'api': self.api.to_dict(),
             'logging': self.logging.to_dict(),
             'security': self.security.to_dict()
         }
@@ -289,10 +261,6 @@ class ConfigLoader:
             'SFM_CACHE_BACKEND': 'cache.backend',
             'SFM_CACHE_HOST': 'cache.host',
             'SFM_CACHE_PORT': 'cache.port',
-            'SFM_API_HOST': 'api.host',
-            'SFM_API_PORT': 'api.port',
-            'SFM_API_DEBUG': 'api.debug',
-            'SFM_API_JWT_SECRET': 'api.jwt_secret',
             'SFM_LOG_LEVEL': 'logging.level',
             'SFM_LOG_FORMAT': 'logging.format',
             'SFM_DEBUG': 'debug',
@@ -380,7 +348,6 @@ class ConfigLoader:
         # Extract nested configurations
         database_config = DatabaseConfig(**config_data.get('database', {}))
         cache_config = CacheConfig(**config_data.get('cache', {}))
-        api_config = APIConfig(**config_data.get('api', {}))
         logging_config = LoggingConfig(**config_data.get('logging', {}))
         security_config = SecurityConfig(**config_data.get('security', {}))
         
@@ -391,7 +358,6 @@ class ConfigLoader:
             version=config_data.get('version', '1.0.0'),
             database=database_config,
             cache=cache_config,
-            api=api_config,
             logging=logging_config,
             security=security_config
         )
@@ -414,7 +380,6 @@ class ConfigLoader:
         secret_mappings = {
             'database_password': 'database.password',
             'cache_password': 'cache.password',
-            'jwt_secret': 'api.jwt_secret',
             'secret_key': 'security.secret_key',
             'encryption_key': 'security.encryption_key'
         }
@@ -469,10 +434,6 @@ class ConfigLoader:
         
         if config.cache.ttl < 0:
             raise ConfigurationError(f"Invalid cache TTL: {config.cache.ttl}")
-        
-        # Validate API configuration
-        if config.api.port < 1 or config.api.port > 65535:
-            raise ConfigurationError(f"Invalid API port: {config.api.port}")
         
         # Validate logging configuration
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
@@ -539,7 +500,6 @@ __all__ = [
     'SFMConfig',
     'DatabaseConfig',
     'CacheConfig',
-    'APIConfig',
     'LoggingConfig',
     'SecurityConfig',
     'ConfigLoader',

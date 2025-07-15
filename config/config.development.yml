@@ -20,18 +20,6 @@ cache:
   ttl: 1800  # 30 minutes
   max_size: 500
 
-# API configuration for development
-api:
-  host: 0.0.0.0
-  port: 8000
-  debug: true
-  cors_origins:
-    - "http://localhost:3000"
-    - "http://localhost:8080"
-    - "http://localhost:3001"
-  rate_limit: "1000/hour"  # More permissive for development
-  request_timeout: 60
-
 # Logging configuration for development
 logging:
   level: DEBUG

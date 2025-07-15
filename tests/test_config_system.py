@@ -22,7 +22,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from config.config_manager import (
-    SFMConfig, DatabaseConfig, CacheConfig, APIConfig, LoggingConfig, SecurityConfig,
+    SFMConfig, DatabaseConfig, CacheConfig, LoggingConfig, SecurityConfig,
     ConfigLoader, ConfigurationError, Environment, get_config_loader, get_config
 )
 from config.secrets_manager import (
@@ -79,16 +79,6 @@ class TestConfigurationDataClasses(unittest.TestCase):
         self.assertEqual(cache_config.ttl, 3600)
         self.assertEqual(cache_config.max_size, 10000)
         
-    def test_api_config_creation(self):
-        """Test APIConfig creation and defaults."""
-        api_config = APIConfig()
-        
-        self.assertEqual(api_config.host, "0.0.0.0")
-        self.assertEqual(api_config.port, 8000)
-        self.assertEqual(api_config.debug, False)
-        self.assertEqual(api_config.cors_origins, ["*"])
-        self.assertEqual(api_config.rate_limit, "100/hour")
-        
     def test_sfm_config_creation(self):
         """Test SFMConfig creation and nested configs."""
         config = SFMConfig()
@@ -98,7 +88,6 @@ class TestConfigurationDataClasses(unittest.TestCase):
         self.assertEqual(config.version, "1.0.0")
         self.assertIsInstance(config.database, DatabaseConfig)
         self.assertIsInstance(config.cache, CacheConfig)
-        self.assertIsInstance(config.api, APIConfig)
         self.assertIsInstance(config.logging, LoggingConfig)
         self.assertIsInstance(config.security, SecurityConfig)
         
@@ -112,7 +101,6 @@ class TestConfigurationDataClasses(unittest.TestCase):
         self.assertIn('debug', config_dict)
         self.assertIn('database', config_dict)
         self.assertIn('cache', config_dict)
-        self.assertIn('api', config_dict)
         self.assertIn('logging', config_dict)
         self.assertIn('security', config_dict)
         
@@ -244,15 +232,11 @@ class TestConfigLoader(unittest.TestCase):
         
         loader._set_nested_value(data, 'database.host', 'test-host')
         loader._set_nested_value(data, 'database.port', 5432)
-        loader._set_nested_value(data, 'api.debug', True)
         
         expected = {
             'database': {
                 'host': 'test-host',
                 'port': 5432
-            },
-            'api': {
-                'debug': True
             }
         }
         
@@ -549,7 +533,6 @@ class TestConfigurationIntegration(unittest.TestCase):
         self.assertEqual(config.database.host, 'localhost')
         self.assertEqual(config.database.port, 5432)
         self.assertEqual(config.cache.backend, 'memory')
-        self.assertEqual(config.api.port, 8001)
         
         # Validate configuration
         report = validate_configuration(config.to_dict())

@@ -24,18 +24,6 @@ cache:
   max_size: 10000
   db: 0
 
-# API configuration for staging
-api:
-  host: 0.0.0.0
-  port: 8000
-  debug: false
-  cors_origins:
-    - "https://staging.sfm.example.com"
-    - "https://staging-app.sfm.example.com"
-  rate_limit: "500/hour"
-  request_timeout: 30
-  max_request_size: 10485760
-
 # Logging configuration for staging
 logging:
   level: INFO

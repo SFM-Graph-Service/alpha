@@ -95,10 +95,6 @@ class SFMPlugin(ABC):
         """Register custom event handlers."""
         return {}
     
-    def register_api_endpoints(self) -> Dict[str, Callable]:
-        """Register custom API endpoints."""
-        return {}
-    
     def get_configuration_schema(self) -> Dict[str, Any]:
         """Get configuration schema for this plugin."""
         return {}
@@ -125,7 +121,6 @@ class PluginRegistry:
         self._analyzers: Dict[str, Callable] = {}
         self._validators: Dict[str, Callable] = {}
         self._event_handlers: Dict[str, Callable] = {}
-        self._api_endpoints: Dict[str, Callable] = {}
         self._plugin_owners: Dict[str, str] = {}  # Maps resource name to plugin name
     
     def register_entity_type(self, entity_type: Type[Node], plugin_name: str) -> None:
@@ -172,14 +167,6 @@ class PluginRegistry:
         self._event_handlers[event_type] = handler
         self._plugin_owners[f"event:{event_type}"] = plugin_name
     
-    def register_api_endpoint(self, endpoint: str, handler: Callable, plugin_name: str) -> None:
-        """Register a custom API endpoint."""
-        if endpoint in self._api_endpoints:
-            raise ValueError(f"API endpoint {endpoint} already registered")
-        
-        self._api_endpoints[endpoint] = handler
-        self._plugin_owners[f"api:{endpoint}"] = plugin_name
-    
     def get_entity_type(self, type_name: str) -> Optional[Type[Node]]:
         """Get an entity type by name."""
         return self._entity_types.get(type_name)
@@ -199,10 +186,6 @@ class PluginRegistry:
     def get_event_handler(self, event_type: str) -> Optional[Callable]:
         """Get an event handler by event type."""
         return self._event_handlers.get(event_type)
-    
-    def get_api_endpoint(self, endpoint: str) -> Optional[Callable]:
-        """Get an API endpoint handler by endpoint."""
-        return self._api_endpoints.get(endpoint)
     
     def unregister_plugin_resources(self, plugin_name: str) -> None:
         """Unregister all resources from a specific plugin."""
@@ -225,8 +208,6 @@ class PluginRegistry:
                 self._validators.pop(resource_name, None)
             elif resource_type == "event":
                 self._event_handlers.pop(resource_name, None)
-            elif resource_type == "api":
-                self._api_endpoints.pop(resource_name, None)
             
             del self._plugin_owners[resource]
     
@@ -237,8 +218,7 @@ class PluginRegistry:
             "relationship_kinds": list(self._relationship_kinds.keys()),
             "analyzers": list(self._analyzers.keys()),
             "validators": list(self._validators.keys()),
-            "event_handlers": list(self._event_handlers.keys()),
-            "api_endpoints": list(self._api_endpoints.keys())
+            "event_handlers": list(self._event_handlers.keys())
         }
     
     def get_plugin_resources(self, plugin_name: str) -> Dict[str, List[str]]:
@@ -248,8 +228,7 @@ class PluginRegistry:
             "relationship_kinds": [],
             "analyzers": [],
             "validators": [],
-            "event_handlers": [],
-            "api_endpoints": []
+            "event_handlers": []
         }
         
         for resource, owner in self._plugin_owners.items():
@@ -265,8 +244,6 @@ class PluginRegistry:
                     plugin_resources["validators"].append(resource_name)
                 elif resource_type == "event":
                     plugin_resources["event_handlers"].append(resource_name)
-                elif resource_type == "api":
-                    plugin_resources["api_endpoints"].append(resource_name)
         
         return plugin_resources
 
@@ -426,9 +403,6 @@ class PluginManager:
             
             for event_type, handler in plugin.register_event_handlers().items():
                 self._plugin_registry.register_event_handler(event_type, handler, plugin_name)
-            
-            for endpoint, handler in plugin.register_api_endpoints().items():
-                self._plugin_registry.register_api_endpoint(endpoint, handler, plugin_name)
             
             # Update plugin status
             plugin_info.status = PluginStatus.ACTIVATED

@@ -34,10 +34,8 @@ class SecretType(Enum):
     """Types of secrets."""
     DATABASE_PASSWORD = "database_password"
     CACHE_PASSWORD = "cache_password"
-    JWT_SECRET = "jwt_secret"
     SECRET_KEY = "secret_key"
     ENCRYPTION_KEY = "encryption_key"
-    API_KEY = "api_key"
     CERTIFICATE = "certificate"
     PRIVATE_KEY = "private_key"
 

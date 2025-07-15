@@ -189,10 +189,6 @@ def generate_template(ctx, environment, output):
                     'backend': 'memory',
                     'max_size': 1000
                 },
-                'api': {
-                    'debug': True,
-                    'rate_limit': '1000/hour'
-                },
                 'logging': {
                     'level': 'DEBUG',
                     'format': 'text',
@@ -214,11 +210,6 @@ def generate_template(ctx, environment, output):
                     'backend': 'redis',
                     'host': 'prod-redis.example.com',
                     'max_size': 100000
-                },
-                'api': {
-                    'debug': False,
-                    'rate_limit': '1000/hour',
-                    'cors_origins': ['https://yourdomain.com']
                 },
                 'logging': {
                     'level': 'WARNING',

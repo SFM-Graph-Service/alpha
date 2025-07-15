@@ -5,8 +5,8 @@ This module provides a simplified, unified interface to the SFM framework's core
 It acts as a facade that abstracts away the complexity of directly working with repositories,
 query engines, and data models, providing an intuitive API for common SFM operations.
 
-The service is designed to work both as a direct Python library and as a backend service
-for FastAPI REST endpoints.
+The service is designed to work as a direct Python library and as a backend service
+for various client applications.
 
 Key Features:
 - Unified interface for creating, managing, and analyzing SFM graphs
@@ -15,7 +15,6 @@ Key Features:
 - High-level operations for common SFM use cases
 - Type-safe operations with runtime validation
 - Automatic graph synchronization and consistency management
-- FastAPI-compatible data models and response formats
 - Comprehensive error handling and logging
 
 Usage Examples:
@@ -31,17 +30,15 @@ service.connect(actor.id, policy.id, "IMPLEMENTS")
 analysis = service.analyze_centrality()
 ```
 
-FastAPI Integration:
+Direct Usage:
 ```python
-from fastapi import FastAPI
-from core.sfm_service import SFMService, get_sfm_service
+from core.sfm_service import SFMService
 
-app = FastAPI()
-service = get_sfm_service()
+service = SFMService()
 
-@app.post("/actors")
-async def create_actor(request: CreateActorRequest):
-    return service.create_actor(**request.dict())
+# Create entities
+actor = service.create_actor(name="Tech Corp", sector="Technology")
+resource = service.create_resource(name="Solar Panel", rtype="PRODUCED")
 ```
 """
 
@@ -168,7 +165,7 @@ __all__ = [
 ]
 
 
-# ═══ DATA TRANSFER OBJECTS (DTOs) FOR API ═══
+# ═══ DATA TRANSFER OBJECTS (DTOs) ═══
 
 @dataclass
 class CreateActorRequest:
@@ -208,7 +205,7 @@ class CreateResourceRequest:
 
     name: str
     description: str = ""
-    rtype: str = "NATURAL"  # String representation for API
+    rtype: str = "NATURAL"  # String representation
     unit: str = ""
     meta: Optional[Dict[str, str]] = None
 
@@ -217,8 +214,8 @@ class CreateResourceRequest:
 class CreateRelationshipRequest:
     """Request model for creating a relationship."""
 
-    source_id: str  # String UUID for API
-    target_id: str  # String UUID for API
+    source_id: str  # String UUID
+    target_id: str  # String UUID
     kind: str
     weight: float = 1.0
     meta: Optional[Dict[str, str]] = None
@@ -359,7 +356,7 @@ class SFMService:
 
     This service provides a simplified interface for creating, managing, and analyzing
     SFM graphs without requiring direct interaction with repositories or query engines.
-    It's designed to work both as a direct Python library and as a backend for REST APIs.
+    It's designed to work as a direct Python library and as a backend for various applications.
     """
 
     def __init__(self, config: Optional[SFMServiceConfig] = None):
@@ -548,7 +545,7 @@ class SFMService:
                 last_operation=self._last_operation,
             )
 
-    # ═══ ENTITY CREATION (API-COMPATIBLE) ═══
+    # ═══ ENTITY CREATION ═══
 
     @audit_operation(AuditOperationType.CREATE, entity_type="Actor")
     @timed_operation("create_actor")
@@ -566,7 +563,7 @@ class SFMService:
             NodeResponse with the created actor data
         """
         try:
-            # Handle both API request objects and direct calls
+            # Handle both request objects and direct calls
             if isinstance(request, dict):
                 data = request
             elif isinstance(request, CreateActorRequest):
@@ -1043,7 +1040,7 @@ class SFMService:
                 node_uuid, relationship_kind_enums, distance
             )
 
-            # Convert UUIDs back to strings for API compatibility
+            # Convert UUIDs back to strings for compatibility
             return [str(neighbor_id) for neighbor_id in neighbor_ids]
 
         except ValueError as exc:
@@ -1358,7 +1355,7 @@ class SFMService:
             if path_ids is None:
                 return None
 
-            # Convert UUIDs back to strings for API compatibility
+            # Convert UUIDs back to strings for compatibility
             return [str(node_id) for node_id in path_ids]
 
         except ValueError as exc:
@@ -1902,7 +1899,7 @@ def create_sfm_service(config: Optional[SFMServiceConfig] = None) -> SFMService:
 
 
 def get_sfm_service() -> SFMService:
-    """Get singleton SFM service instance (for FastAPI dependency injection)."""
+    """Get singleton SFM service instance (for dependency injection)."""
     global _service_instance
     if _service_instance is None:
         _service_instance = create_sfm_service()

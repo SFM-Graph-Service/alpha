@@ -105,53 +105,6 @@ class CacheConfigModel(BaseModel):
         return v
 
 
-class APIConfigModel(BaseModel):
-    """Pydantic model for API configuration validation."""
-    
-    host: str = Field(default="0.0.0.0", description="API host")
-    port: int = Field(default=8000, ge=1, le=65535, description="API port")
-    debug: bool = Field(default=False, description="Debug mode")
-    cors_origins: List[str] = Field(default_factory=list, description="CORS origins")
-    rate_limit: str = Field(default="100/hour", description="Rate limit")
-    jwt_secret: str = Field(default="", description="JWT secret")
-    request_timeout: int = Field(default=30, ge=1, le=300, description="Request timeout")
-    max_request_size: int = Field(default=10485760, ge=1024, description="Max request size")
-    
-    @validator('cors_origins')
-    def validate_cors_origins(cls, v):
-        """Validate CORS origins format."""
-        for origin in v:
-            if origin != "*" and not origin.startswith(('http://', 'https://')):
-                raise ValueError(f'Invalid CORS origin format: {origin}')
-        return v
-    
-    @validator('rate_limit')
-    def validate_rate_limit(cls, v):
-        """Validate rate limit format."""
-        if not v or '/' not in v:
-            raise ValueError('Rate limit must be in format "number/period"')
-        
-        parts = v.split('/')
-        if len(parts) != 2:
-            raise ValueError('Rate limit must be in format "number/period"')
-        
-        try:
-            int(parts[0])
-        except ValueError:
-            raise ValueError('Rate limit number must be an integer')
-        
-        if parts[1] not in ['second', 'minute', 'hour', 'day']:
-            raise ValueError('Rate limit period must be second, minute, hour, or day')
-        
-        return v
-    
-    @validator('debug')
-    def validate_debug_for_production(cls, v, values):
-        """Validate debug mode for production."""
-        # This would need environment context
-        return v
-
-
 class LoggingConfigModel(BaseModel):
     """Pydantic model for logging configuration validation."""
     
@@ -220,7 +173,6 @@ class SFMConfigModel(BaseModel):
     version: str = Field(default="1.0.0", description="Application version")
     database: DatabaseConfigModel = Field(..., description="Database configuration")
     cache: CacheConfigModel = Field(..., description="Cache configuration")
-    api: APIConfigModel = Field(..., description="API configuration")
     logging: LoggingConfigModel = Field(..., description="Logging configuration")
     security: SecurityConfigModel = Field(..., description="Security configuration")
     
@@ -229,13 +181,6 @@ class SFMConfigModel(BaseModel):
         """Validate debug mode for production environment."""
         if values.get('environment') == EnvironmentType.production and v:
             raise ValueError('Debug mode should not be enabled in production')
-        return v
-    
-    @validator('api')
-    def validate_api_debug_consistency(cls, v, values):
-        """Validate API debug consistency with main debug setting."""
-        if values.get('debug', False) != v.debug:
-            logger.warning('API debug setting differs from main debug setting')
         return v
 
 
@@ -313,10 +258,6 @@ class ConfigValidator:
             if not config.cache.host or config.cache.host == "localhost":
                 self.report.add_warning("Redis host is localhost - may not be suitable for production")
                 
-        # API validation
-        if config.api.debug and config.environment == EnvironmentType.production:
-            self.report.add_error("API debug mode should not be enabled in production")
-            
         # Logging validation
         if config.logging.level == LogLevel.DEBUG and config.environment == EnvironmentType.production:
             self.report.add_warning("Debug logging in production may impact performance")
@@ -350,9 +291,6 @@ class ConfigValidator:
         if not config.security.secret_key:
             self.report.add_warning("Secret key is empty - ensure it's loaded from secrets manager")
             
-        if not config.api.jwt_secret:
-            self.report.add_warning("JWT secret is empty - ensure it's loaded from secrets manager")
-            
         if not config.database.password:
             self.report.add_warning("Database password is empty - ensure it's loaded from secrets manager")
             
@@ -382,7 +320,6 @@ __all__ = [
     'SFMConfigModel',
     'DatabaseConfigModel',
     'CacheConfigModel',
-    'APIConfigModel',
     'LoggingConfigModel',
     'SecurityConfigModel',
     'ValidationReport',

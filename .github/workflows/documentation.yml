@@ -32,7 +32,7 @@ jobs:
       - name: Check docstring style with pydocstyle
         run: |
           if command -v pydocstyle &> /dev/null; then
-            pydocstyle core/ api/ db/ --convention=google --count > pydocstyle-report.txt 2>&1 || true
+            pydocstyle core/ db/ --convention=google --count > pydocstyle-report.txt 2>&1 || true
           else
             echo "pydocstyle not available, skipping docstring style check" > pydocstyle-report.txt
           fi
@@ -41,7 +41,7 @@ jobs:
       - name: Check docstring coverage with interrogate
         run: |
           if command -v interrogate &> /dev/null; then
-            interrogate core/ api/ db/ --verbose --ignore-init-method \
+            interrogate core/ db/ --verbose --ignore-init-method \
                        --ignore-magic --ignore-module --ignore-private \
                        > interrogate-report.txt 2>&1 || true
           else
@@ -133,51 +133,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Check API documentation consistency
-        run: |
-          cat > check_api_docs.py << 'EOF'
-          import ast
-          import os
-          import re
-          
-          def check_api_documentation():
-              """Check if API endpoints have corresponding documentation."""
-              api_file = "api/sfm_api.py"
-              issues = []
-              
-              if not os.path.exists(api_file):
-                  return ["API file not found"]
-              
-              with open(api_file, 'r') as f:
-                  content = f.read()
-              
-              # Find all route decorators
-              routes = re.findall(r'@app\.(get|post|put|delete|patch)\(["\']([^"\']+)["\']', content)
-              
-              for method, route in routes:
-                  # Check if route has docstring
-                  pattern = f'@app\\.{method}\\(["\']' + re.escape(route) + '["\'].*?def\\s+\\w+\\([^)]*\\):(.*?)(?=def|@|$)'
-                  match = re.search(pattern, content, re.DOTALL)
-                  if match:
-                      func_body = match.group(1)
-                      if '"""' not in func_body and "'''" not in func_body:
-                          issues.append(f"Route {method.upper()} {route} missing docstring")
-              
-              return issues
-          
-          issues = check_api_documentation()
-          with open("api-docs-report.txt", "w") as f:
-              f.write("API Documentation Consistency Check\n")
-              f.write("===================================\n\n")
-              if issues:
-                  f.write("Issues found:\n")
-                  for issue in issues:
-                      f.write(f"- {issue}\n")
-              else:
-                  f.write("No issues found - all API endpoints have documentation\n")
-          EOF
-          
-          python check_api_docs.py
+     
 
       - name: Check enum documentation consistency
         run: |
@@ -241,7 +197,7 @@ jobs:
           
           # Check if README mentions all main modules
           echo "Checking if README mentions core modules..." >> readme-consistency-report.txt
-          MODULES=("sfm_models" "sfm_enums" "sfm_service" "sfm_api" "sfm_dao" "sfm_query")
+          MODULES=("sfm_models" "sfm_enums" "sfm_service" "sfm_dao" "sfm_query")
           for module in "${MODULES[@]}"; do
               if grep -q "$module" README.md; then
                   echo "✓ $module mentioned in README" >> readme-consistency-report.txt
@@ -265,7 +221,6 @@ jobs:
         with:
           name: consistency-reports
           path: |
-            api-docs-report.txt
             enum-docs-report.txt
             readme-consistency-report.txt
 
@@ -287,17 +242,6 @@ jobs:
           pip install sphinx sphinx-rtd-theme || echo "Warning: Sphinx tools failed to install"
           pip install -r requirements.txt
 
-      - name: Generate API documentation
-        run: |
-          if command -v sphinx-apidoc &> /dev/null; then
-            mkdir -p docs/build
-            sphinx-apidoc -o docs/build core/ api/ db/ || echo "sphinx-apidoc failed"
-            echo "API documentation generated successfully" > docs-build-report.txt
-            echo "Generated files:" >> docs-build-report.txt
-            ls -la docs/build/ >> docs-build-report.txt 2>&1 || echo "No files generated" >> docs-build-report.txt
-          else
-            echo "sphinx-apidoc not available, skipping API documentation generation" > docs-build-report.txt
-          fi
 
       - name: Upload documentation build
         uses: actions/upload-artifact@v4
