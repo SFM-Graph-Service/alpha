@@ -28,7 +28,8 @@ class ValueSystem(Node):
     parent_values: List[uuid.UUID] = field(default_factory=lambda: [])
     priority_weight: Optional[float] = None
     cultural_domain: Optional[str] = None
-    legitimacy_source: Optional[LegitimacySource] = None  # Weber's authority types
+    # Weber's authority types
+    legitimacy_source: Optional[LegitimacySource] = None
 
 
 @dataclass
@@ -53,12 +54,14 @@ class InstrumentalBehavior(Node):
 class ChangeProcess(Node):
     """Models institutional and technological change over time."""
 
-    change_type: ChangeType = ChangeType.EVOLUTIONARY  # evolutionary, revolutionary, cyclical
+    # evolutionary, revolutionary, cyclical
+    change_type: ChangeType = ChangeType.EVOLUTIONARY
     change_agents: List[uuid.UUID] = field(default_factory=lambda: [])
     resistance_factors: List[uuid.UUID] = field(default_factory=lambda: [])
     change_trajectory: List[TimeSlice] = field(default_factory=lambda: [])
     success_probability: Optional[float] = None
-    temporal_dynamics: Optional[TemporalDynamics] = None  # Detailed change over time
+    # Detailed change over time
+    temporal_dynamics: Optional[TemporalDynamics] = None
 
 
 @dataclass

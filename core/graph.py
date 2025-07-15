@@ -16,8 +16,14 @@ from datetime import datetime
 
 from core.base_nodes import Node
 from core.core_nodes import (
-    Actor, Institution, Policy, Resource, Process, Flow, ValueFlow, GovernanceStructure
-)
+    Actor,
+    Institution,
+    Policy,
+    Resource,
+    Process,
+    Flow,
+    ValueFlow,
+    GovernanceStructure)
 from core.specialized_nodes import (
     BeliefSystem, TechnologySystem, Indicator, FeedbackLoop, SystemProperty,
     AnalyticalContext, PolicyInstrument
@@ -87,7 +93,8 @@ class NodeTypeRegistry:
         """Get all collection names in the registry."""
         return [collection_name for _, collection_name in self._type_handlers]
 
-    def iter_collections(self, graph: 'SFMGraph') -> Iterator[Dict[uuid.UUID, Node]]:
+    def iter_collections(
+            self, graph: 'SFMGraph') -> Iterator[Dict[uuid.UUID, Node]]:
         """Iterate over all collections in the graph."""
         for collection_name in self.get_all_collection_names():
             collection = getattr(graph, collection_name)
@@ -105,7 +112,9 @@ class NetworkMetrics(Node):
 
 
 @dataclass
-class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-instance-attributes
+class SFMGraph(
+        EvictableGraph,
+        GraphObservable):  # pylint: disable=too-many-instance-attributes
     """A complete Social Fabric Matrix representation with advanced performance optimizations."""
 
     id: uuid.UUID = field(default_factory=uuid.uuid4)
@@ -114,33 +123,48 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
 
     # Core SFM components
     actors: Dict[uuid.UUID, Actor] = field(default_factory=lambda: {})
-    institutions: Dict[uuid.UUID, Institution] = field(default_factory=lambda: {})
+    institutions: Dict[uuid.UUID, Institution] = field(
+        default_factory=lambda: {})
     resources: Dict[uuid.UUID, Resource] = field(default_factory=lambda: {})
     processes: Dict[uuid.UUID, Process] = field(default_factory=lambda: {})
     flows: Dict[uuid.UUID, Flow] = field(default_factory=lambda: {})
-    relationships: Dict[uuid.UUID, Relationship] = field(default_factory=lambda: {})
+    relationships: Dict[uuid.UUID, Relationship] = field(
+        default_factory=lambda: {})
     # Optional specialized components
-    belief_systems: Dict[uuid.UUID, BeliefSystem] = field(default_factory=lambda: {})
-    technology_systems: Dict[uuid.UUID, TechnologySystem] = field(default_factory=lambda: {})
+    belief_systems: Dict[uuid.UUID, BeliefSystem] = field(
+        default_factory=lambda: {})
+    technology_systems: Dict[uuid.UUID, TechnologySystem] = field(
+        default_factory=lambda: {})
     indicators: Dict[uuid.UUID, Indicator] = field(default_factory=lambda: {})
     policies: Dict[uuid.UUID, Policy] = field(default_factory=lambda: {})
-    feedback_loops: Dict[uuid.UUID, FeedbackLoop] = field(default_factory=lambda: {})
-    system_properties: Dict[uuid.UUID, SystemProperty] = field(default_factory=lambda: {})
-    analytical_contexts: Dict[uuid.UUID, AnalyticalContext] = field(default_factory=lambda: {})
-    policy_instruments: Dict[uuid.UUID, PolicyInstrument] = field(default_factory=lambda: {})
-    governance_structures: Dict[uuid.UUID, GovernanceStructure] = field(default_factory=lambda: {})
+    feedback_loops: Dict[uuid.UUID, FeedbackLoop] = field(
+        default_factory=lambda: {})
+    system_properties: Dict[uuid.UUID, SystemProperty] = field(
+        default_factory=lambda: {})
+    analytical_contexts: Dict[uuid.UUID, AnalyticalContext] = field(
+        default_factory=lambda: {})
+    policy_instruments: Dict[uuid.UUID, PolicyInstrument] = field(
+        default_factory=lambda: {})
+    governance_structures: Dict[uuid.UUID, GovernanceStructure] = field(
+        default_factory=lambda: {})
 
     # Hayden's enhanced SFM components
-    value_systems: Dict[uuid.UUID, ValueSystem] = field(default_factory=lambda: {})
-    ceremonial_behaviors: Dict[uuid.UUID, CeremonialBehavior] = field(default_factory=lambda: {})
+    value_systems: Dict[uuid.UUID, ValueSystem] = field(
+        default_factory=lambda: {})
+    ceremonial_behaviors: Dict[uuid.UUID, CeremonialBehavior] = field(
+        default_factory=lambda: {})
     instrumental_behaviors: Dict[uuid.UUID, InstrumentalBehavior] = field(
         default_factory=lambda: {}
     )
-    change_processes: Dict[uuid.UUID, ChangeProcess] = field(default_factory=lambda: {})
-    cognitive_frameworks: Dict[uuid.UUID, CognitiveFramework] = field(default_factory=lambda: {})
-    behavioral_patterns: Dict[uuid.UUID, BehavioralPattern] = field(default_factory=lambda: {})
+    change_processes: Dict[uuid.UUID, ChangeProcess] = field(
+        default_factory=lambda: {})
+    cognitive_frameworks: Dict[uuid.UUID, CognitiveFramework] = field(
+        default_factory=lambda: {})
+    behavioral_patterns: Dict[uuid.UUID, BehavioralPattern] = field(
+        default_factory=lambda: {})
     value_flows: Dict[uuid.UUID, ValueFlow] = field(default_factory=lambda: {})
-    network_metrics: Dict[uuid.UUID, NetworkMetrics] = field(default_factory=lambda: {})
+    network_metrics: Dict[uuid.UUID, NetworkMetrics] = field(
+        default_factory=lambda: {})
 
     # Model metadata
     version: int = 1
@@ -157,9 +181,11 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
     )
 
     # Performance optimization: Central node index for O(1) lookups
-    _node_index: Dict[uuid.UUID, Node] = field(default_factory=lambda: {}, init=False)
+    _node_index: Dict[uuid.UUID, Node] = field(
+        default_factory=lambda: {}, init=False)
 
-    # Performance optimization: Simple relationship cache for frequently accessed relationships
+    # Performance optimization: Simple relationship cache for frequently
+    # accessed relationships
     _relationship_cache: Dict[uuid.UUID, List[Relationship]] = field(
         default_factory=lambda: {}, init=False
     )
@@ -167,7 +193,8 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
 
     # Performance optimization: Optional lazy loading support
     _lazy_loading_enabled: bool = field(default=False, init=False)
-    _node_loader: Optional[Callable[[uuid.UUID], Optional[Node]]] = field(default=None, init=False)
+    _node_loader: Optional[Callable[[uuid.UUID], Optional[Node]]] = field(
+        default=None, init=False)
 
     # Memory management and advanced caching
     _memory_monitor: Optional[MemoryMonitor] = field(default=None, init=False)
@@ -180,17 +207,17 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
         """Initialize performance optimizations after dataclass initialization."""
         # Initialize GraphObservable
         GraphObservable.__init__(self)
-        
+
         if self._enable_memory_management:
             self._memory_monitor = MemoryMonitor(
                 memory_limit_mb=self._memory_limit_mb,
                 warning_threshold=0.8,
                 critical_threshold=0.95
             )
-        
+
         if self._enable_advanced_caching:
             self._setup_cache_invalidation_rules()
-    
+
     def __getstate__(self):
         """Custom pickle serialization to handle non-serializable objects."""
         state = self.__dict__.copy()
@@ -200,7 +227,7 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
             if key in state:
                 del state[key]
         return state
-    
+
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """Custom pickle deserialization to restore non-serializable objects."""
         self.__dict__.update(state)
@@ -211,35 +238,33 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
                 warning_threshold=0.8,
                 critical_threshold=0.95
             )
-        
+
         if getattr(self, '_enable_advanced_caching', True):
             self._query_cache = QueryCache()
             self._setup_cache_invalidation_rules()
-    
+
     def _setup_cache_invalidation_rules(self):
         """Set up cache invalidation rules for different events."""
         if not hasattr(self, '_query_cache') or not self._query_cache:
             self._query_cache = QueryCache()
-            
+
         # Node-related invalidations
         self._query_cache.register_invalidation_rule(
-            'node_added', 
-            ['get_node_relationships:{node_id}:*', 'get_nodes_by_type:*', 'count_nodes:*']
-        )
-        
+            'node_added', [
+                'get_node_relationships:{node_id}:*', 'get_nodes_by_type:*', 'count_nodes:*'])
+
         self._query_cache.register_invalidation_rule(
-            'node_removed',
-            ['get_node_relationships:{node_id}:*', 'get_nodes_by_type:*', 'count_nodes:*']
-        )
-        
+            'node_removed', [
+                'get_node_relationships:{node_id}:*', 'get_nodes_by_type:*', 'count_nodes:*'])
+
         # Relationship-related invalidations
         self._query_cache.register_invalidation_rule(
             'relationship_added',
             ['get_node_relationships:*', 'find_paths:*', 'analyze_network:*']
         )
-        
+
         self._query_cache.register_invalidation_rule(
-            'relationship_removed', 
+            'relationship_removed',
             ['get_node_relationships:*', 'find_paths:*', 'analyze_network:*']
         )
 
@@ -259,11 +284,15 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
             if self._memory_monitor.should_evict_nodes():
                 evicted = self._memory_monitor.evict_nodes(self)
                 if evicted > 0:
-                    logger.info(f"Evicted {evicted} nodes after adding new node")
+                    logger.info(
+                        f"Evicted {evicted} nodes after adding new node")
 
         # Cache invalidation
-        if self._enable_advanced_caching and hasattr(self, '_query_cache') and self._query_cache:
-            self._query_cache.invalidate_on_event('node_added', node_id=self._get_node_id_for_cache(node.id))  # type: ignore[arg-type]
+        if self._enable_advanced_caching and hasattr(
+                self, '_query_cache') and self._query_cache:
+            self._query_cache.invalidate_on_event(
+                'node_added', node_id=self._get_node_id_for_cache(
+                    node.id))  # type: ignore[arg-type]
 
         # Observer pattern: Notify observers of node addition
         self._notify_node_added(node)
@@ -290,14 +319,17 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
         # Store the relationship
         self.relationships[relationship.id] = relationship
 
-        # Performance optimization: Clear relationship cache when relationships change
+        # Performance optimization: Clear relationship cache when relationships
+        # change
         self._clear_relationship_cache()
 
         # Cache invalidation
-        if self._enable_advanced_caching and hasattr(self, '_query_cache') and self._query_cache:
-            self._query_cache.invalidate_on_event('relationship_added', 
-                                               source_id=self._get_node_id_for_cache(relationship.source_id),
-                                               target_id=self._get_node_id_for_cache(relationship.target_id))
+        if self._enable_advanced_caching and hasattr(
+                self, '_query_cache') and self._query_cache:
+            self._query_cache.invalidate_on_event(
+                'relationship_added', source_id=self._get_node_id_for_cache(
+                    relationship.source_id), target_id=self._get_node_id_for_cache(
+                    relationship.target_id))
 
         # Observer pattern: Notify observers of relationship addition
         self._notify_relationship_added(relationship)
@@ -308,11 +340,11 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
         """Find a node by its ID using central index for O(1) lookup."""
         if self._lazy_loading_enabled:
             return self._find_node_by_id_with_lazy_loading(node_id)
-        
+
         # Record access for memory management
         if self._memory_monitor:
             self._memory_monitor.record_node_access(node_id)
-            
+
         return self._node_index.get(node_id)
 
     @timed_operation("get_node_by_id")
@@ -327,9 +359,8 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
 
     def __len__(self) -> int:
         """Return the total number of nodes in the graph."""
-        return sum(
-            len(collection) for collection in self._node_registry.iter_collections(self)
-        )
+        return sum(len(collection)
+                   for collection in self._node_registry.iter_collections(self))
 
     def clear(self) -> None:
         """Clear all nodes and relationships from the graph."""
@@ -353,9 +384,10 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
     def get_node_relationships(self, node_id: uuid.UUID) -> List[Relationship]:
         """Get all relationships for a node with caching for performance."""
         # Try advanced cache first
-        if (self._enable_advanced_caching and 
-            hasattr(self, '_query_cache') and self._query_cache):
-            cached_result = self._query_cache.get_cached_result("get_node_relationships", node_id)
+        if (self._enable_advanced_caching and
+                hasattr(self, '_query_cache') and self._query_cache):
+            cached_result = self._query_cache.get_cached_result(
+                "get_node_relationships", node_id)
             if cached_result is not None:
                 return cached_result
 
@@ -363,9 +395,12 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
         if node_id in self._relationship_cache:
             relationships = self._relationship_cache[node_id]
             # Cache in advanced cache too
-            if (self._enable_advanced_caching and 
-                hasattr(self, '_query_cache') and self._query_cache):
-                self._query_cache.cache_result("get_node_relationships", relationships, node_id=self._get_node_id_for_cache(node_id))
+            if (self._enable_advanced_caching and
+                    hasattr(self, '_query_cache') and self._query_cache):
+                self._query_cache.cache_result(
+                    "get_node_relationships",
+                    relationships,
+                    node_id=self._get_node_id_for_cache(node_id))
             return relationships
 
         # Compute relationships for this node
@@ -381,15 +416,21 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
             del self._relationship_cache[oldest_key]
 
         self._relationship_cache[node_id] = relationships
-        
+
         # Cache in advanced cache
-        if (self._enable_advanced_caching and 
-            hasattr(self, '_query_cache') and self._query_cache):
-            self._query_cache.cache_result("get_node_relationships", relationships, ttl=1800, node_id=self._get_node_id_for_cache(node_id))
-        
+        if (self._enable_advanced_caching and
+                hasattr(self, '_query_cache') and self._query_cache):
+            self._query_cache.cache_result(
+                "get_node_relationships",
+                relationships,
+                ttl=1800,
+                node_id=self._get_node_id_for_cache(node_id))
+
         return relationships
 
-    def enable_lazy_loading(self, node_loader: Callable[[uuid.UUID], Optional[Node]]) -> None:
+    def enable_lazy_loading(self,
+                            node_loader: Callable[[uuid.UUID],
+                                                  Optional[Node]]) -> None:
         """Enable lazy loading with a custom node loader function.
 
         Args:
@@ -403,7 +444,8 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
         self._lazy_loading_enabled = False
         self._node_loader = None
 
-    def _find_node_by_id_with_lazy_loading(self, node_id: uuid.UUID) -> Optional[Node]:
+    def _find_node_by_id_with_lazy_loading(
+            self, node_id: uuid.UUID) -> Optional[Node]:
         """Find a node by ID with optional lazy loading support."""
         # First check the index
         node = self._node_index.get(node_id)
@@ -439,20 +481,22 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
             node = self._node_index[node_id]
             collection_name = self._node_registry.get_collection_name(node)
             collection = getattr(self, collection_name)
-            
+
             # Remove from collection and index
             del collection[node_id]
             del self._node_index[node_id]
-            
+
             # Clear related caches
             self._relationship_cache.pop(node_id, None)
-            if (self._enable_advanced_caching and 
-                hasattr(self, '_query_cache') and self._query_cache):
-                self._query_cache.invalidate_on_event('node_removed', node_id=self._get_node_id_for_cache(node_id))  # type: ignore[arg-type]
-            
+            if (self._enable_advanced_caching and
+                    hasattr(self, '_query_cache') and self._query_cache):
+                self._query_cache.invalidate_on_event(
+                    'node_removed',
+                    node_id=self._get_node_id_for_cache(node_id))  # type: ignore[arg-type]
+
             logger.debug(f"Evicted node {node_id} from memory")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to remove node {node_id} from memory: {e}")
             return False
@@ -462,17 +506,17 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
         node = self._node_index.get(node_id)
         if not node:
             return 0
-        
+
         try:
             # Basic size estimation
             size = sys.getsizeof(node)
-            
+
             # Add size of string attributes
             if hasattr(node, 'label') and node.label:
                 size += sys.getsizeof(node.label)
             if hasattr(node, 'description') and node.description:
                 size += sys.getsizeof(node.description)
-                
+
             return size
         except Exception:
             return 128  # Default estimate
@@ -510,13 +554,16 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
             "relationship_cache_size": len(self._relationship_cache),
             "memory_management_enabled": self._enable_memory_management
         }
-        
+
         if self._memory_monitor:
-            stats.update(self._memory_monitor.get_eviction_stats())  # type: ignore[arg-type]
-            
-        if self._enable_advanced_caching and hasattr(self, '_query_cache') and self._query_cache:
-            stats["query_cache_stats"] = self._query_cache.get_stats()  # type: ignore[assignment]
-            
+            # type: ignore[arg-type]
+            stats.update(self._memory_monitor.get_eviction_stats())
+
+        if self._enable_advanced_caching and hasattr(
+                self, '_query_cache') and self._query_cache:
+            # type: ignore[assignment]
+            stats["query_cache_stats"] = self._query_cache.get_stats()
+
         return stats
 
     # Advanced caching methods
@@ -529,8 +576,8 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
     def clear_all_caches(self) -> None:
         """Clear all caches."""
         self._relationship_cache.clear()
-        if (self._enable_advanced_caching and 
-            hasattr(self, '_query_cache') and self._query_cache):
+        if (self._enable_advanced_caching and
+                hasattr(self, '_query_cache') and self._query_cache):
             self._query_cache.clear()
 
     def get_cache_stats(self) -> Dict[str, Any]:
@@ -539,9 +586,10 @@ class SFMGraph(EvictableGraph, GraphObservable):  # pylint: disable=too-many-ins
             "relationship_cache_size": len(self._relationship_cache),
             "relationship_cache_max_size": self._relationship_cache_max_size,
         }
-        
-        if (self._enable_advanced_caching and 
-            hasattr(self, '_query_cache') and self._query_cache):
-            stats["query_cache"] = self._query_cache.get_stats()  # type: ignore[assignment]
-            
+
+        if (self._enable_advanced_caching and
+                hasattr(self, '_query_cache') and self._query_cache):
+            # type: ignore[assignment]
+            stats["query_cache"] = self._query_cache.get_stats()
+
         return stats

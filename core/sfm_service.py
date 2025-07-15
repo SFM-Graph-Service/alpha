@@ -133,7 +133,7 @@ SFMServiceError = SFMError
 __all__ = [
     # DTOs
     'CreateActorRequest',
-    'CreateInstitutionRequest', 
+    'CreateInstitutionRequest',
     'CreatePolicyRequest',
     'CreateResourceRequest',
     'CreateRelationshipRequest',
@@ -232,6 +232,7 @@ class NodeResponse:
     meta: Dict[str, Any]
     created_at: Optional[str] = None
 
+
 @dataclass
 class RelationshipResponse:
     """Response model for relationships."""
@@ -315,24 +316,26 @@ class SFMServiceConfig:
     log_level: str = "INFO"
     max_graph_size: int = DEFAULT_GRAPH_SIZE_LIMIT
     query_timeout: int = DEFAULT_QUERY_TIMEOUT
-    
+
     # New configuration fields that can be overridden
     use_global_config: bool = True
     global_config: Optional[SFMConfig] = None
-    
+
     @classmethod
-    def from_global_config(cls, global_config: Optional[SFMConfig] = None) -> 'SFMServiceConfig':
+    def from_global_config(
+            cls,
+            global_config: Optional[SFMConfig] = None) -> 'SFMServiceConfig':
         """Create service config from global configuration.
-        
+
         Args:
             global_config: Global configuration object, or None to load from default
-            
+
         Returns:
             SFMServiceConfig: Service configuration
         """
         if global_config is None:
             global_config = get_config()
-        
+
         return cls(
             storage_backend="networkx",  # Default for now
             auto_sync=True,
@@ -370,7 +373,8 @@ class SFMService:
         if config is None:
             try:
                 global_config = get_config()
-                self.config = SFMServiceConfig.from_global_config(global_config)
+                self.config = SFMServiceConfig.from_global_config(
+                    global_config)
             except Exception as e:
                 logger.warning(f"Failed to load global configuration: {e}")
                 self.config = SFMServiceConfig()
@@ -379,7 +383,10 @@ class SFMService:
 
         # Setup logging
         if self.config.enable_logging:
-            logging.basicConfig(level=getattr(logging, self.config.log_level.upper()))
+            logging.basicConfig(
+                level=getattr(
+                    logging,
+                    self.config.log_level.upper()))
 
         # Initialize repositories
         self._base_repo = SFMRepositoryFactory.create_repository(
@@ -407,8 +414,8 @@ class SFMService:
         self._command_manager = CommandManager()  # Add command manager
 
         logger.info(
-            "SFM Service initialized with backend: %s", self.config.storage_backend
-        )
+            "SFM Service initialized with backend: %s",
+            self.config.storage_backend)
 
     # ═══ PROPERTY ACCESS & INTERNAL METHODS ═══
 
@@ -433,7 +440,9 @@ class SFMService:
         if self.config.auto_sync:
             self._cache_dirty = True
         self._last_operation = operation or "unknown"
-        logger.debug("Cache marked dirty after operation: %s", self._last_operation)
+        logger.debug(
+            "Cache marked dirty after operation: %s",
+            self._last_operation)
 
     def _validate_graph_size(self):
         """Validate that the graph hasn't exceeded size limits."""
@@ -447,8 +456,7 @@ class SFMService:
                 raise SFMError(
                     message,
                     ErrorCode.GRAPH_SIZE_EXCEEDED,
-                    remediation="Consider pruning the graph or increasing the size limit"
-                )
+                    remediation="Consider pruning the graph or increasing the size limit")
 
     def _convert_to_resource_type(self, rtype_str: str) -> ResourceType:
         """Convert string to ResourceType enum."""
@@ -465,7 +473,9 @@ class SFMService:
             return RelationshipKind[kind_str.upper()]
         except KeyError:
             # Default to AFFECTS if not found
-            logger.warning("Unknown relationship kind '%s', using AFFECTS", kind_str)
+            logger.warning(
+                "Unknown relationship kind '%s', using AFFECTS",
+                kind_str)
             return RelationshipKind.AFFECTS
 
     def _node_to_response(self, node: Node) -> NodeResponse:
@@ -479,7 +489,8 @@ class SFMService:
             created_at=datetime.now().isoformat(),
         )
 
-    def _relationship_to_response(self, rel: Relationship) -> RelationshipResponse:
+    def _relationship_to_response(
+            self, rel: Relationship) -> RelationshipResponse:
         """Convert a Relationship to a RelationshipResponse."""
         return RelationshipResponse(
             id=str(rel.id),
@@ -497,12 +508,12 @@ class SFMService:
         """Get service health status with enhanced metrics."""
         try:
             stats = self.get_statistics()
-            
+
             # Get performance and audit metrics
             performance_summary = self._metrics_collector.get_summary_stats()
             audit_stats = self._audit_logger.get_audit_stats()
             transaction_stats = self._transaction_manager.get_transaction_stats()
-            
+
             # Enhanced health information
             enhanced_health = ServiceHealth(
                 status=ServiceStatus.HEALTHY,
@@ -512,7 +523,7 @@ class SFMService:
                 relationship_count=stats.total_relationships,
                 last_operation=self._last_operation,
             )
-            
+
             # Add enhanced metrics to the health response via metadata
             if hasattr(enhanced_health, 'meta'):
                 enhanced_health.meta = {
@@ -533,9 +544,9 @@ class SFMService:
                         "active_transactions": transaction_stats.get("active_transactions", 0)
                     }
                 }
-            
+
             return enhanced_health
-            
+
         except Exception as e:
             logger.error("Health check failed: %s", e)
             return ServiceHealth(
@@ -576,9 +587,12 @@ class SFMService:
             try:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
-                logger.warning("Security validation failed for actor creation: %s", e.message)
-                raise SFMValidationError(f"Security validation failed: {e.message}",
-                                      e.field, e.value) from e
+                logger.warning(
+                    "Security validation failed for actor creation: %s",
+                    e.message)
+                raise SFMValidationError(
+                    f"Security validation failed: {
+                        e.message}", e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
@@ -593,16 +607,17 @@ class SFMService:
             )
 
             result = self._actor_repo.create(actor)
-            
+
             # Track operation in transaction if active
             if self._transaction_manager.is_in_transaction():
                 self._transaction_manager.add_operation(
-                    operation_type="create_actor",
-                    data={"actor_id": str(result.id), "name": result.label},
-                    rollback_data={"actor_id": str(result.id)},
-                    rollback_function=lambda data: self._rollback_create_actor(data["actor_id"])
-                )
-            
+                    operation_type="create_actor", data={
+                        "actor_id": str(
+                            result.id), "name": result.label}, rollback_data={
+                        "actor_id": str(
+                            result.id)}, rollback_function=lambda data: self._rollback_create_actor(
+                        data["actor_id"]))
+
             self._mark_dirty("create_actor")
             self._validate_graph_size()
 
@@ -617,8 +632,9 @@ class SFMService:
         except Exception as e:
             logger.error("Failed to create actor: %s", e)
             raise SFMError(
-                f"Failed to create actor: {str(e)}", ErrorCode.CREATE_ACTOR_FAILED
-            ) from e
+                f"Failed to create actor: {
+                    str(e)}",
+                ErrorCode.CREATE_ACTOR_FAILED) from e
 
     @audit_operation(AuditOperationType.CREATE, entity_type="Institution")
     @timed_operation("create_institution")
@@ -638,13 +654,17 @@ class SFMService:
             try:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
-                logger.warning("Security validation failed for institution creation: %s", e.message)
-                raise SFMValidationError(f"Security validation failed: {e.message}",
-                                      e.field, e.value) from e
+                logger.warning(
+                    "Security validation failed for institution creation: %s",
+                    e.message)
+                raise SFMValidationError(
+                    f"Security validation failed: {
+                        e.message}", e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
-                    raise SFMValidationError("Institution name is required", "name")
+                    raise SFMValidationError(
+                        "Institution name is required", "name")
 
             institution = Institution(
                 label=data["name"],
@@ -653,33 +673,40 @@ class SFMService:
             )
 
             result = self._institution_repo.create(institution)
-            
+
             # Track operation in transaction if active
             if self._transaction_manager.is_in_transaction():
                 self._transaction_manager.add_operation(
-                    operation_type="create_institution",
-                    data={"institution_id": str(result.id), "name": result.label},
-                    rollback_data={"institution_id": str(result.id)},
-                    rollback_function=lambda data: self._rollback_create_institution(data["institution_id"])
-                )
-            
+                    operation_type="create_institution", data={
+                        "institution_id": str(
+                            result.id), "name": result.label}, rollback_data={
+                        "institution_id": str(
+                            result.id)}, rollback_function=lambda data: self._rollback_create_institution(
+                        data["institution_id"]))
+
             self._mark_dirty("create_institution")
 
-            logger.info("Created institution: %s (%s)", result.label, result.id)
+            logger.info(
+                "Created institution: %s (%s)",
+                result.label,
+                result.id)
             return self._node_to_response(result)
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to create institution: %s", e)
-            raise SFMValidationError(f"Invalid institution data: {str(e)}") from e
+            raise SFMValidationError(
+                f"Invalid institution data: {
+                    str(e)}") from e
         except SFMError:
             raise
         except Exception as e:
             logger.error("Failed to create institution: %s", e)
             raise SFMError(
-                f"Failed to create institution: {str(e)}", "CREATE_INSTITUTION_FAILED"
-            ) from e
+                f"Failed to create institution: {
+                    str(e)}",
+                "CREATE_INSTITUTION_FAILED") from e
 
-    @audit_operation(AuditOperationType.CREATE, entity_type="Policy")  
+    @audit_operation(AuditOperationType.CREATE, entity_type="Policy")
     @timed_operation("create_policy")
     def create_policy(
         self, request: Union[CreatePolicyRequest, dict], **kwargs
@@ -697,9 +724,12 @@ class SFMService:
             try:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
-                logger.warning("Security validation failed for policy creation: %s", e.message)
-                raise SFMValidationError(f"Security validation failed: {e.message}",
-                                      e.field, e.value) from e
+                logger.warning(
+                    "Security validation failed for policy creation: %s",
+                    e.message)
+                raise SFMValidationError(
+                    f"Security validation failed: {
+                        e.message}", e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
@@ -715,16 +745,17 @@ class SFMService:
             )
 
             result = self._policy_repo.create(policy)
-            
+
             # Track operation in transaction if active
             if self._transaction_manager.is_in_transaction():
                 self._transaction_manager.add_operation(
-                    operation_type="create_policy",
-                    data={"policy_id": str(result.id), "name": result.label},
-                    rollback_data={"policy_id": str(result.id)},
-                    rollback_function=lambda data: self._rollback_create_policy(data["policy_id"])
-                )
-            
+                    operation_type="create_policy", data={
+                        "policy_id": str(
+                            result.id), "name": result.label}, rollback_data={
+                        "policy_id": str(
+                            result.id)}, rollback_function=lambda data: self._rollback_create_policy(
+                        data["policy_id"]))
+
             self._mark_dirty("create_policy")
 
             logger.info("Created policy: %s (%s)", result.label, result.id)
@@ -757,15 +788,20 @@ class SFMService:
             try:
                 data = validate_and_sanitize_node_data(data)
             except SecurityValidationError as e:
-                logger.warning("Security validation failed for resource creation: %s", e.message)
-                raise SFMValidationError(f"Security validation failed: {e.message}",
-                                      e.field, e.value) from e
+                logger.warning(
+                    "Security validation failed for resource creation: %s",
+                    e.message)
+                raise SFMValidationError(
+                    f"Security validation failed: {
+                        e.message}", e.field, e.value) from e
 
             if self.config.validation_enabled:
                 if not data.get("name"):
-                    raise SFMValidationError("Resource name is required", "name")
+                    raise SFMValidationError(
+                        "Resource name is required", "name")
 
-            rtype = self._convert_to_resource_type(data.get("rtype", "NATURAL"))
+            rtype = self._convert_to_resource_type(
+                data.get("rtype", "NATURAL"))
 
             resource = Resource(
                 label=data["name"],
@@ -776,16 +812,17 @@ class SFMService:
             )
 
             result = self._resource_repo.create(resource)
-            
+
             # Track operation in transaction if active
             if self._transaction_manager.is_in_transaction():
                 self._transaction_manager.add_operation(
-                    operation_type="create_resource",
-                    data={"resource_id": str(result.id), "name": result.label},
-                    rollback_data={"resource_id": str(result.id)},
-                    rollback_function=lambda data: self._rollback_create_resource(data["resource_id"])
-                )
-            
+                    operation_type="create_resource", data={
+                        "resource_id": str(
+                            result.id), "name": result.label}, rollback_data={
+                        "resource_id": str(
+                            result.id)}, rollback_function=lambda data: self._rollback_create_resource(
+                        data["resource_id"]))
+
             self._mark_dirty("create_resource")
 
             logger.info("Created resource: %s (%s)", result.label, result.id)
@@ -799,8 +836,9 @@ class SFMService:
         except Exception as e:
             logger.error("Failed to create resource: %s", e)
             raise SFMError(
-                f"Failed to create resource: {str(e)}", "CREATE_RESOURCE_FAILED"
-            ) from e
+                f"Failed to create resource: {
+                    str(e)}",
+                "CREATE_RESOURCE_FAILED") from e
 
     # ═══ RELATIONSHIP MANAGEMENT ═══
 
@@ -827,23 +865,24 @@ class SFMService:
 
             if self.config.validation_enabled:
                 if not data.get("source_id") or not data.get("target_id"):
-                    raise SFMValidationError("Source and target IDs are required")
+                    raise SFMValidationError(
+                        "Source and target IDs are required")
                 if not data.get("kind"):
                     raise SFMValidationError("Relationship kind is required")
 
             source_id = uuid.UUID(data["source_id"])
             target_id = uuid.UUID(data["target_id"])
-            
+
             # Handle self-referencing relationships to avoid deadlock
             if source_id == target_id:
                 # For self-referencing relationships, only acquire one lock
                 with self._lock_manager.lock_entity(source_id, LockType.READ) as entity_lock:
                     # Referential integrity validation - ensure entity exists
-                    if not self._validate_relationship_integrity(source_id, target_id):
+                    if not self._validate_relationship_integrity(
+                            source_id, target_id):
                         raise SFMValidationError(
-                            f"Referential integrity violation: entity {source_id} does not exist"
-                        )
-                    
+                            f"Referential integrity violation: entity {source_id} does not exist")
+
                     kind = self._convert_to_relationship_kind(data["kind"])
 
                     relationship = Relationship(
@@ -853,20 +892,22 @@ class SFMService:
                         weight=data.get("weight", 1.0),
                         meta=data.get("meta", {})
                     )
-                    
+
                     result = self._relationship_repo.create(relationship)
                     self._mark_dirty("create_relationship")
                     return self._relationship_to_response(result)
             else:
-                # For different entities, acquire locks on both to prevent concurrent modification
+                # For different entities, acquire locks on both to prevent
+                # concurrent modification
                 with self._lock_manager.lock_entity(source_id, LockType.READ) as source_lock:
                     with self._lock_manager.lock_entity(target_id, LockType.READ) as target_lock:
-                        # Referential integrity validation - ensure both endpoints exist
-                        if not self._validate_relationship_integrity(source_id, target_id):
+                        # Referential integrity validation - ensure both
+                        # endpoints exist
+                        if not self._validate_relationship_integrity(
+                                source_id, target_id):
                             raise SFMValidationError(
-                                f"Referential integrity violation: source {source_id} or target {target_id} does not exist"
-                            )
-                        
+                                f"Referential integrity violation: source {source_id} or target {target_id} does not exist")
+
                         kind = self._convert_to_relationship_kind(data["kind"])
 
                         relationship = Relationship(
@@ -878,16 +919,17 @@ class SFMService:
                         )
 
                         result = self._relationship_repo.create(relationship)
-                        
+
                         # Track operation in transaction if active
                         if self._transaction_manager.is_in_transaction():
                             self._transaction_manager.add_operation(
-                                operation_type="create_relationship",
-                                data={"relationship_id": str(result.id), "source_id": str(source_id), "target_id": str(target_id)},
-                                rollback_data={"relationship_id": str(result.id)},
-                                rollback_function=lambda data: self._rollback_create_relationship(data["relationship_id"])
-                            )
-                        
+                                operation_type="create_relationship", data={
+                                    "relationship_id": str(
+                                        result.id), "source_id": str(source_id), "target_id": str(target_id)}, rollback_data={
+                                    "relationship_id": str(
+                                        result.id)}, rollback_function=lambda data: self._rollback_create_relationship(
+                                    data["relationship_id"]))
+
                         self._mark_dirty("create_relationship")
 
                         logger.info(
@@ -901,14 +943,17 @@ class SFMService:
             raise SFMValidationError(f"Invalid UUID format: {e}") from e
         except (TypeError, AttributeError) as e:
             logger.error("Failed to create relationship: %s", e)
-            raise SFMValidationError(f"Invalid relationship data: {str(e)}") from e
+            raise SFMValidationError(
+                f"Invalid relationship data: {
+                    str(e)}") from e
         except SFMError:
             raise
         except Exception as e:
             logger.error("Failed to create relationship: %s", e)
             raise SFMError(
-                f"Failed to create relationship: {str(e)}", "CREATE_RELATIONSHIP_FAILED"
-            ) from e
+                f"Failed to create relationship: {
+                    str(e)}",
+                "CREATE_RELATIONSHIP_FAILED") from e
 
     def connect(
         self,
@@ -931,7 +976,10 @@ class SFMService:
 
     # ═══ ENTITY RETRIEVAL ═══
 
-    def get_entity(self, entity_type: Type[T], entity_id: uuid.UUID) -> Optional[T]:
+    def get_entity(
+            self,
+            entity_type: Type[T],
+            entity_id: uuid.UUID) -> Optional[T]:
         """Generic method to retrieve any entity by type and ID."""
         try:
             repo_mapping = {
@@ -947,11 +995,16 @@ class SFMService:
 
             repo = repo_mapping.get(entity_type)
             if repo is None:
-                raise ValueError(f"No repository found for entity type: {entity_type}")
+                raise ValueError(
+                    f"No repository found for entity type: {entity_type}")
 
             return repo.read(entity_id)
         except Exception as e:
-            logger.error("Failed to retrieve %s %s: %s", entity_type.__name__, entity_id, e)
+            logger.error(
+                "Failed to retrieve %s %s: %s",
+                entity_type.__name__,
+                entity_id,
+                e)
             return None
 
     def get_actor(self, actor_id: uuid.UUID) -> Optional[Actor]:
@@ -962,7 +1015,9 @@ class SFMService:
         """Retrieve a policy by ID."""
         return self.get_entity(Policy, policy_id)
 
-    def get_institution(self, institution_id: uuid.UUID) -> Optional[Institution]:
+    def get_institution(
+            self,
+            institution_id: uuid.UUID) -> Optional[Institution]:
         """Retrieve an institution by ID."""
         return self.get_entity(Institution, institution_id)
 
@@ -997,8 +1052,8 @@ class SFMService:
         except Exception as e:
             logger.error("Failed to get relationship %s: %s", rel_id, e)
             raise SFMError(
-                f"Failed to retrieve relationship: {str(e)}", "GET_RELATIONSHIP_FAILED"
-            ) from e
+                f"Failed to retrieve relationship: {
+                    str(e)}", "GET_RELATIONSHIP_FAILED") from e
 
     def get_node_neighbors(
         self,
@@ -1029,10 +1084,12 @@ class SFMService:
                 relationship_kind_enums = []
                 for kind_str in relationship_kinds:
                     try:
-                        kind_enum = self._convert_to_relationship_kind(kind_str)
+                        kind_enum = self._convert_to_relationship_kind(
+                            kind_str)
                         relationship_kind_enums.append(kind_enum)
                     except SFMValidationError:
-                        logger.warning("Unknown relationship kind: %s", kind_str)
+                        logger.warning(
+                            "Unknown relationship kind: %s", kind_str)
 
             # Use the query engine to find neighbors
             engine = self.query_engine
@@ -1044,12 +1101,14 @@ class SFMService:
             return [str(neighbor_id) for neighbor_id in neighbor_ids]
 
         except ValueError as exc:
-            raise SFMValidationError(f"Invalid UUID format: {node_id}") from exc
+            raise SFMValidationError(
+                f"Invalid UUID format: {node_id}") from exc
         except Exception as e:
             logger.error("Failed to get neighbors for node %s: %s", node_id, e)
             raise SFMError(
-                f"Failed to get node neighbors: {str(e)}", "GET_NODE_NEIGHBORS_FAILED"
-            ) from e
+                f"Failed to get node neighbors: {
+                    str(e)}",
+                "GET_NODE_NEIGHBORS_FAILED") from e
 
     # ═══ ENTITY LISTING ═══
 
@@ -1067,7 +1126,7 @@ class SFMService:
         self, items: List[Any], limit: int, offset: int
     ) -> List[Any]:
         """Apply pagination to a list of items."""
-        return items[offset : offset + limit]
+        return items[offset: offset + limit]
 
     def list_nodes(
         self,
@@ -1091,7 +1150,9 @@ class SFMService:
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to list nodes: %s", e)
-            raise SFMValidationError(f"Invalid parameters for listing nodes: {str(e)}") from e
+            raise SFMValidationError(
+                f"Invalid parameters for listing nodes: {
+                    str(e)}") from e
         except Exception as e:
             logger.error("Failed to list nodes: %s", e)
             raise SFMError(
@@ -1107,7 +1168,8 @@ class SFMService:
         """List relationships with optional filtering and pagination."""
         try:
             # Apply filtering by kind if specified
-            filter_kind = self._convert_to_relationship_kind(kind) if kind else None
+            filter_kind = self._convert_to_relationship_kind(
+                kind) if kind else None
             relationships = (
                 self._relationship_repo.list_all()
                 if not filter_kind
@@ -1115,22 +1177,28 @@ class SFMService:
             )
 
             # Apply pagination
-            paginated_rels = self._apply_pagination(relationships, limit, offset)
+            paginated_rels = self._apply_pagination(
+                relationships, limit, offset)
 
-            return [self._relationship_to_response(rel) for rel in paginated_rels]
+            return [self._relationship_to_response(
+                rel) for rel in paginated_rels]
 
         except (ValueError, TypeError) as e:
             logger.error("Failed to list relationships: %s", e)
-            raise SFMValidationError(f"Invalid parameters for listing relationships: {str(e)}") from e
+            raise SFMValidationError(
+                f"Invalid parameters for listing relationships: {
+                    str(e)}") from e
         except Exception as e:
             logger.error("Failed to list relationships: %s", e)
             raise SFMError(
-                f"Failed to list relationships: {str(e)}", "LIST_RELATIONSHIPS_FAILED"
-            ) from e
+                f"Failed to list relationships: {
+                    str(e)}",
+                "LIST_RELATIONSHIPS_FAILED") from e
 
     # ═══ ANALYSIS OPERATIONS ═══
 
-    def _count_nodes_by_type(self, graph: SFMGraph) -> Tuple[int, Dict[str, int]]:
+    def _count_nodes_by_type(
+            self, graph: SFMGraph) -> Tuple[int, Dict[str, int]]:
         """
         Count nodes by their type in the graph.
 
@@ -1153,7 +1221,8 @@ class SFMService:
 
         return total_nodes, type_counts
 
-    def _count_relationships_by_kind(self, graph: SFMGraph) -> Tuple[int, Dict[str, int]]:
+    def _count_relationships_by_kind(
+            self, graph: SFMGraph) -> Tuple[int, Dict[str, int]]:
         """
         Count relationships by their kind in the graph.
 
@@ -1176,7 +1245,8 @@ class SFMService:
 
         return total_relationships, rel_counts
 
-    @audit_operation(AuditOperationType.READ, "get_statistics", level=AuditLevel.INFO)
+    @audit_operation(AuditOperationType.READ,
+                     "get_statistics", level=AuditLevel.INFO)
     @timed_operation("get_statistics")
     def get_statistics(self) -> GraphStatistics:
         """Get comprehensive statistics about the current graph."""
@@ -1187,7 +1257,8 @@ class SFMService:
             total_nodes, type_counts = self._count_nodes_by_type(graph)
 
             # Count relationships by kind using helper method
-            total_relationships, rel_counts = self._count_relationships_by_kind(graph)
+            total_relationships, rel_counts = self._count_relationships_by_kind(
+                graph)
 
             return GraphStatistics(
                 total_nodes=total_nodes,
@@ -1204,8 +1275,9 @@ class SFMService:
             ) from e
 
     def analyze_centrality(
-        self, centrality_type: str = "betweenness", limit: int = TOP_NODES_LIMIT
-    ) -> CentralityAnalysis:
+            self,
+            centrality_type: str = "betweenness",
+            limit: int = TOP_NODES_LIMIT) -> CentralityAnalysis:
         """Perform centrality analysis on the network."""
         try:
             engine = self.query_engine
@@ -1217,7 +1289,8 @@ class SFMService:
 
             if len(graph) > 0:
                 for node in graph:
-                    score = engine.get_node_centrality(node.id, centrality_type)
+                    score = engine.get_node_centrality(
+                        node.id, centrality_type)
                     centrality_scores[str(node.id)] = score
 
                 # Get most central nodes
@@ -1238,16 +1311,19 @@ class SFMService:
         except Exception as e:
             logger.error("Failed to analyze centrality: %s", e)
             raise SFMError(
-                f"Failed to analyze centrality: {str(e)}", "CENTRALITY_ANALYSIS_FAILED"
-            ) from e
+                f"Failed to analyze centrality: {
+                    str(e)}",
+                "CENTRALITY_ANALYSIS_FAILED") from e
 
-    def _validate_and_convert_uuid(self, value: Union[str, uuid.UUID]) -> uuid.UUID:
+    def _validate_and_convert_uuid(
+            self, value: Union[str, uuid.UUID]) -> uuid.UUID:
         """Validate and convert a string or UUID to a proper UUID object."""
         if isinstance(value, str):
             try:
                 return uuid.UUID(value)
             except ValueError as e:
-                raise SFMValidationError(f"Invalid UUID format: {value}") from e
+                raise SFMValidationError(
+                    f"Invalid UUID format: {value}") from e
         return value
 
     def _build_policy_impact_analysis(
@@ -1282,7 +1358,8 @@ class SFMService:
 
             # Get impact analysis from query engine
             engine = self.query_engine
-            impact_data = engine.analyze_policy_impact(validated_policy_id, impact_radius)
+            impact_data = engine.analyze_policy_impact(
+                validated_policy_id, impact_radius)
 
             # Check for error in impact data
             if "error" in impact_data:
@@ -1341,10 +1418,12 @@ class SFMService:
                 relationship_kind_enums = []
                 for kind_str in relationship_kinds:
                     try:
-                        kind_enum = self._convert_to_relationship_kind(kind_str)
+                        kind_enum = self._convert_to_relationship_kind(
+                            kind_str)
                         relationship_kind_enums.append(kind_enum)
                     except SFMValidationError:
-                        logger.warning("Unknown relationship kind: %s", kind_str)
+                        logger.warning(
+                            "Unknown relationship kind: %s", kind_str)
 
             # Use the query engine to find the path
             engine = self.query_engine
@@ -1359,16 +1438,22 @@ class SFMService:
             return [str(node_id) for node_id in path_ids]
 
         except ValueError as exc:
-            raise SFMValidationError("Invalid UUID format in path finding") from exc
+            raise SFMValidationError(
+                "Invalid UUID format in path finding") from exc
         except Exception as e:
             logger.error(
-                "Failed to find path between %s and %s: %s", source_id, target_id, e
-            )
+                "Failed to find path between %s and %s: %s",
+                source_id,
+                target_id,
+                e)
             raise SFMError(
                 f"Failed to find shortest path: {str(e)}", "FIND_PATH_FAILED"
             ) from e
 
-    def find_shortest_path_legacy(self, source_id: str, target_id: str) -> list:
+    def find_shortest_path_legacy(
+            self,
+            source_id: str,
+            target_id: str) -> list:
         """
         Find the shortest path between two nodes by their IDs.
         Returns a list of node IDs representing the path, or empty list if no path exists.
@@ -1386,12 +1471,13 @@ class SFMService:
             return []
         except Exception as e:
             logger.error("Failed to find legacy path between %s and %s: %s",
-                        source_id, target_id, e)
+                         source_id, target_id, e)
             return []
 
     # ═══ SYSTEM MANAGEMENT ═══
 
-    @audit_operation(AuditOperationType.DELETE, "clear_all_data", level=AuditLevel.WARNING)
+    @audit_operation(AuditOperationType.DELETE,
+                     "clear_all_data", level=AuditLevel.WARNING)
     @timed_operation("clear_all_data")
     def clear_all_data(self) -> Dict[str, Any]:
         """Clear all data from the repository."""
@@ -1429,31 +1515,35 @@ class SFMService:
                 for request in requests:
                     result = self.create_actor(request)
                     results.append(result)
-                
-                logger.info(f"Successfully created {len(results)} actors in bulk operation")
+
+                logger.info(
+                    f"Successfully created {
+                        len(results)} actors in bulk operation")
                 return results
-                
+
             except Exception as e:
-                logger.error(f"Bulk actor creation failed after {len(results)} successful operations: {e}")
+                logger.error(
+                    f"Bulk actor creation failed after {
+                        len(results)} successful operations: {e}")
                 # Transaction will automatically rollback all created actors
                 raise SFMError(
-                    f"Bulk actor creation failed: {str(e)}", "BULK_CREATE_ACTORS_FAILED"
-                ) from e
+                    f"Bulk actor creation failed: {
+                        str(e)}", "BULK_CREATE_ACTORS_FAILED") from e
 
     def transaction(self, metadata: Optional[Dict[str, Any]] = None):
         """
         Context manager for transactional operations.
-        
+
         This provides proper transaction support with rollback capabilities.
         All operations within the transaction context will be rolled back
         if an exception occurs.
-        
+
         Args:
             metadata: Optional metadata for the transaction
-            
+
         Yields:
             SFMService: The service instance for chaining operations
-            
+
         Example:
             with service.transaction() as tx_service:
                 actor = tx_service.create_actor(actor_request)
@@ -1466,7 +1556,7 @@ class SFMService:
         def transaction_wrapper():
             with self._transaction_manager.transaction(metadata):
                 yield self
-        
+
         return transaction_wrapper()
 
     # ═══ TRANSACTION ROLLBACK HELPERS ═══
@@ -1485,7 +1575,8 @@ class SFMService:
             self._policy_repo.delete(uuid.UUID(policy_id))
             logger.debug(f"Rolled back policy creation: {policy_id}")
         except Exception as e:
-            logger.error(f"Failed to rollback policy creation {policy_id}: {e}")
+            logger.error(
+                f"Failed to rollback policy creation {policy_id}: {e}")
 
     def _rollback_create_institution(self, institution_id: str):
         """Rollback institution creation by deleting the institution."""
@@ -1493,7 +1584,8 @@ class SFMService:
             self._institution_repo.delete(uuid.UUID(institution_id))
             logger.debug(f"Rolled back institution creation: {institution_id}")
         except Exception as e:
-            logger.error(f"Failed to rollback institution creation {institution_id}: {e}")
+            logger.error(
+                f"Failed to rollback institution creation {institution_id}: {e}")
 
     def _rollback_create_resource(self, resource_id: str):
         """Rollback resource creation by deleting the resource."""
@@ -1501,54 +1593,70 @@ class SFMService:
             self._resource_repo.delete(uuid.UUID(resource_id))
             logger.debug(f"Rolled back resource creation: {resource_id}")
         except Exception as e:
-            logger.error(f"Failed to rollback resource creation {resource_id}: {e}")
+            logger.error(
+                f"Failed to rollback resource creation {resource_id}: {e}")
 
     def _rollback_create_relationship(self, relationship_id: str):
         """Rollback relationship creation by deleting the relationship."""
         try:
             self._relationship_repo.delete(uuid.UUID(relationship_id))
-            logger.debug(f"Rolled back relationship creation: {relationship_id}")
+            logger.debug(
+                f"Rolled back relationship creation: {relationship_id}")
         except Exception as e:
-            logger.error(f"Failed to rollback relationship creation {relationship_id}: {e}")
+            logger.error(
+                f"Failed to rollback relationship creation {relationship_id}: {e}")
 
-    def _validate_relationship_integrity(self, source_id: uuid.UUID, target_id: uuid.UUID) -> bool:
+    def _validate_relationship_integrity(
+            self,
+            source_id: uuid.UUID,
+            target_id: uuid.UUID) -> bool:
         """
         Validate referential integrity for relationship endpoints.
-        
+
         Args:
             source_id: Source entity UUID
             target_id: Target entity UUID
-            
+
         Returns:
             True if both entities exist, False otherwise
         """
         try:
             # Check if source entity exists
             source_exists = False
-            for repo in [self._actor_repo, self._institution_repo, self._policy_repo, 
-                        self._resource_repo, self._process_repo, self._flow_repo]:
+            for repo in [
+                    self._actor_repo,
+                    self._institution_repo,
+                    self._policy_repo,
+                    self._resource_repo,
+                    self._process_repo,
+                    self._flow_repo]:
                 if repo.read(source_id) is not None:
                     source_exists = True
                     break
-            
+
             if not source_exists:
                 logger.warning(f"Source entity {source_id} does not exist")
                 return False
-            
+
             # Check if target entity exists
             target_exists = False
-            for repo in [self._actor_repo, self._institution_repo, self._policy_repo, 
-                        self._resource_repo, self._process_repo, self._flow_repo]:
+            for repo in [
+                    self._actor_repo,
+                    self._institution_repo,
+                    self._policy_repo,
+                    self._resource_repo,
+                    self._process_repo,
+                    self._flow_repo]:
                 if repo.read(target_id) is not None:
                     target_exists = True
                     break
-            
+
             if not target_exists:
                 logger.warning(f"Target entity {target_id} does not exist")
                 return False
-            
+
             return True
-            
+
         except Exception as e:
             logger.error(f"Error validating relationship integrity: {e}")
             return False
@@ -1559,10 +1667,12 @@ class SFMService:
         """Get comprehensive performance metrics."""
         return self._metrics_collector.get_summary_stats()
 
-    def get_operation_metrics(self, operation_name: Optional[str] = None) -> Dict[str, Any]:
+    def get_operation_metrics(
+            self, operation_name: Optional[str] = None) -> Dict[str, Any]:
         """Get metrics for specific operations or all operations."""
         if operation_name:
-            return self._metrics_collector.get_operation_metrics(operation_name)
+            return self._metrics_collector.get_operation_metrics(
+                operation_name)
         return self._metrics_collector.get_all_operation_metrics()
 
     def get_audit_metrics(self) -> Dict[str, Any]:
@@ -1573,7 +1683,8 @@ class SFMService:
         """Get transaction management statistics."""
         return self._transaction_manager.get_transaction_stats()
 
-    def get_system_resource_metrics(self, limit: Optional[int] = 10) -> List[Dict[str, Any]]:
+    def get_system_resource_metrics(
+            self, limit: Optional[int] = 10) -> List[Dict[str, Any]]:
         """Get system resource usage metrics."""
         return self._metrics_collector.get_system_metrics(limit)
 
@@ -1641,16 +1752,16 @@ class SFMService:
         return self._command_manager.get_statistics()
 
     # ═══ DATA INTEGRITY VALIDATION ═══
-    
+
     def validate_graph_integrity(self) -> List[Dict[str, Any]]:
         """
         Validate the integrity of the entire graph and return violations.
-        
+
         Returns:
             List of integrity violations found
         """
         violations = []
-        
+
         try:
             # Check for orphaned relationships
             orphaned_relationships = self._find_orphaned_relationships()
@@ -1663,14 +1774,16 @@ class SFMService:
                     "missing_entity": details["missing_entity"],
                     "severity": "high"
                 })
-            
+
             # Check for graph consistency
             consistency_violations = self._check_graph_consistency()
             violations.extend(consistency_violations)
-            
-            logger.info(f"Graph integrity validation completed: {len(violations)} violations found")
+
+            logger.info(
+                f"Graph integrity validation completed: {
+                    len(violations)} violations found")
             return violations
-            
+
         except Exception as e:
             logger.error(f"Graph integrity validation failed: {e}")
             return [{
@@ -1678,31 +1791,31 @@ class SFMService:
                 "message": f"Integrity validation failed: {str(e)}",
                 "severity": "critical"
             }]
-    
+
     def _find_orphaned_relationships(self) -> Dict[uuid.UUID, Dict[str, Any]]:
         """
         Find relationships that reference non-existent entities.
-        
+
         Returns:
             Dictionary of orphaned relationship IDs and their details
         """
         orphaned = {}
-        
+
         try:
             # Get all relationships
             all_relationships = self._relationship_repo.list_all()
-            
+
             for relationship in all_relationships:
                 missing_entities = []
-                
+
                 # Check if source exists
                 if not self._entity_exists(relationship.source_id):
                     missing_entities.append("source")
-                
+
                 # Check if target exists
                 if not self._entity_exists(relationship.target_id):
                     missing_entities.append("target")
-                
+
                 if missing_entities:
                     orphaned[relationship.id] = {
                         "source_id": relationship.source_id,
@@ -1710,42 +1823,47 @@ class SFMService:
                         "missing_entity": missing_entities,
                         "kind": relationship.kind.name
                     }
-            
+
             if orphaned:
                 logger.warning(f"Found {len(orphaned)} orphaned relationships")
-            
+
             return orphaned
-            
+
         except Exception as e:
             logger.error(f"Error finding orphaned relationships: {e}")
             raise
-    
+
     def _entity_exists(self, entity_id: uuid.UUID) -> bool:
         """Check if an entity exists in any repository."""
         try:
-            for repo in [self._actor_repo, self._institution_repo, self._policy_repo, 
-                        self._resource_repo, self._process_repo, self._flow_repo]:
+            for repo in [
+                    self._actor_repo,
+                    self._institution_repo,
+                    self._policy_repo,
+                    self._resource_repo,
+                    self._process_repo,
+                    self._flow_repo]:
                 if repo.read(entity_id) is not None:
                     return True
             return False
         except Exception:
             return False
-    
+
     def _check_graph_consistency(self) -> List[Dict[str, Any]]:
         """Check for graph consistency issues."""
         violations = []
-        
+
         try:
             # Check for duplicate entities (same label/type combination)
             duplicate_violations = self._check_duplicate_entities()
             violations.extend(duplicate_violations)
-            
+
             # Check for circular dependencies in critical paths
             circular_violations = self._check_circular_dependencies()
             violations.extend(circular_violations)
-            
+
             return violations
-            
+
         except Exception as e:
             logger.error(f"Graph consistency check failed: {e}")
             return [{
@@ -1753,15 +1871,15 @@ class SFMService:
                 "message": f"Consistency check failed: {str(e)}",
                 "severity": "medium"
             }]
-    
+
     def _check_duplicate_entities(self) -> List[Dict[str, Any]]:
         """Check for potential duplicate entities."""
         violations = []
-        
+
         try:
             # Group entities by type and label
             entity_groups = {}
-            
+
             for repo_name, repo in [
                 ("Actor", self._actor_repo),
                 ("Institution", self._institution_repo),
@@ -1774,7 +1892,7 @@ class SFMService:
                     if key not in entity_groups:
                         entity_groups[key] = []
                     entity_groups[key].append(entity)
-            
+
             # Find groups with multiple entities
             for (entity_type, label), entities in entity_groups.items():
                 if len(entities) > 1:
@@ -1786,37 +1904,38 @@ class SFMService:
                         "count": len(entities),
                         "severity": "medium"
                     })
-            
+
             return violations
-            
+
         except Exception as e:
             logger.error(f"Duplicate entity check failed: {e}")
             return []
-    
+
     def _check_circular_dependencies(self) -> List[Dict[str, Any]]:
         """Check for circular dependencies that could cause issues."""
         violations = []
-        
+
         try:
             # Use NetworkX to detect cycles
             graph = self.get_graph()
-            
+
             # Convert to NetworkX format for cycle detection
             nx_graph = nx.DiGraph()
-            
+
             # Add nodes
             for node in graph:
                 nx_graph.add_node(str(node.id))
-            
+
             # Add edges (relationships)
             for rel in graph.relationships.values():
                 nx_graph.add_edge(str(rel.source_id), str(rel.target_id))
-            
+
             # Find cycles
             try:
                 cycles = list(nx.simple_cycles(nx_graph))
                 for cycle in cycles:
-                    # Only report cycles longer than 2 nodes as potential issues
+                    # Only report cycles longer than 2 nodes as potential
+                    # issues
                     if len(cycle) > 2:
                         violations.append({
                             "type": "circular_dependency",
@@ -1827,41 +1946,43 @@ class SFMService:
             except nx.NetworkXNoCycle:
                 # No cycles found, which is good
                 pass
-            
+
             return violations
-            
+
         except Exception as e:
             logger.error(f"Circular dependency check failed: {e}")
             return []
-    
-    def repair_orphaned_relationships(self, auto_repair: bool = False) -> Dict[str, Any]:
+
+    def repair_orphaned_relationships(
+            self, auto_repair: bool = False) -> Dict[str, Any]:
         """
         Repair orphaned relationships by removing them.
-        
+
         Args:
             auto_repair: If True, automatically remove orphaned relationships
-            
+
         Returns:
             Dictionary with repair results
         """
         try:
             orphaned = self._find_orphaned_relationships()
-            
+
             if not orphaned:
                 return {
                     "status": "success",
                     "message": "No orphaned relationships found",
                     "removed_count": 0
                 }
-            
+
             if not auto_repair:
                 return {
                     "status": "found_issues",
-                    "message": f"Found {len(orphaned)} orphaned relationships",
-                    "orphaned_relationships": [str(rel_id) for rel_id in orphaned.keys()],
-                    "action_required": "Set auto_repair=True to remove them"
-                }
-            
+                    "message": f"Found {
+                        len(orphaned)} orphaned relationships",
+                    "orphaned_relationships": [
+                        str(rel_id) for rel_id in orphaned.keys()],
+                    "action_required": "Set auto_repair=True to remove them"}
+
             # Remove orphaned relationships
             removed_count = 0
             with self.transaction(metadata={"operation": "repair_orphaned_relationships"}) as tx:
@@ -1870,15 +1991,16 @@ class SFMService:
                         self._relationship_repo.delete(rel_id)
                         removed_count += 1
                     except Exception as e:
-                        logger.error(f"Failed to remove orphaned relationship {rel_id}: {e}")
-            
+                        logger.error(
+                            f"Failed to remove orphaned relationship {rel_id}: {e}")
+
             logger.info(f"Removed {removed_count} orphaned relationships")
             return {
                 "status": "success",
                 "message": f"Removed {removed_count} orphaned relationships",
                 "removed_count": removed_count
             }
-            
+
         except Exception as e:
             logger.error(f"Failed to repair orphaned relationships: {e}")
             return {
@@ -1893,7 +2015,8 @@ class SFMService:
 _service_instance: Optional[SFMService] = None
 
 
-def create_sfm_service(config: Optional[SFMServiceConfig] = None) -> SFMService:
+def create_sfm_service(
+        config: Optional[SFMServiceConfig] = None) -> SFMService:
     """Factory function to create SFM service instances."""
     return SFMService(config)
 

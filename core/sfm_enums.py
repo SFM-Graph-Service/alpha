@@ -4,7 +4,7 @@ Enumerations for the Social Fabric Matrix (SFM) framework.
 This module defines controlled vocabularies and classification systems used throughout
 the SFM analysis framework, based on F. Gregory Hayden's institutional economics work.
 These enumerations provide consistent categorization for values, institutions,
-resources, 
+resources,
 flows, and relationships in socio-economic systems.
 
 ## Theoretical Foundation
@@ -32,7 +32,7 @@ gdp_indicator = Indicator(
     current_value=2.5
 )
 
-# Create a social indicator with multiple value dimensions  
+# Create a social indicator with multiple value dimensions
 sustainability_index = Indicator(
     label="Community Sustainability Index",
     value_category=ValueCategory.ENVIRONMENTAL,
@@ -100,7 +100,7 @@ if ValueCategory.ECONOMIC in [ValueCategory.ECONOMIC, ValueCategory.SOCIAL]:
 
 ## References
 
-- Hayden, F.G. (2006). "Policymaking for a Good Society: The Social Fabric Matrix 
+- Hayden, F.G. (2006). "Policymaking for a Good Society: The Social Fabric Matrix
   Approach to Policy Analysis and Program Evaluation"
 - Hayden, F.G. (1982). "Social Fabric Matrix: From Perspective to Analytical Tool"
 - Hayden, F.G. (1983). "An Evolutionary-Institutional Model for Policy Analysis"
@@ -114,7 +114,7 @@ See Also:
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Dict, List, Set, Tuple,Type, Callable, Any, Union
+from typing import Dict, List, Set, Tuple, Type, Callable, Any, Union
 
 # Module metadata
 __version__ = "1.0.0"
@@ -141,7 +141,7 @@ __all__ = [
     'InstitutionalChangeType',
     'TechnologyReadinessLevel',
     'LegitimacySource',
-   # Exception classes
+    # Exception classes
     'SFMEnumError',
     'IncompatibleEnumError',
     'InvalidEnumOperationError',
@@ -158,23 +158,23 @@ __all__ = [
 class ValueCategory(Enum):
     """
     Categories of value in Hayden's Social Fabric Matrix framework.
-    
+
     Based on F. Gregory Hayden's institutional analysis, these categories represent
     different dimensions of value creation, distribution, and impact within
     socio-economic systems. Hayden's framework extends beyond market-based value
     measurements to include social, environmental, and institutional dimensions
     essential for comprehensive policy analysis.
-    
+
     ## Theoretical Background
-    
+
     Hayden's SFM approach recognizes that economic systems create multiple types of
     value that cannot be adequately captured by market prices alone. This enum
     implements his multi-dimensional value framework, allowing analysts to track
     social benefits, environmental costs, institutional capacity, and other
     non-market values crucial for policy evaluation.
-    
+
     ## Usage Examples
-    
+
     ### Basic Indicator Creation
     ```python
     # Economic indicator (traditional market-based measurement)
@@ -184,24 +184,24 @@ class ValueCategory(Enum):
         measurement_unit="percent_annual",
         current_value=2.3
     )
-    
-    # Social equity indicator  
+
+    # Social equity indicator
     income_inequality = Indicator(
         label="Gini Coefficient",
         value_category=ValueCategory.SOCIAL,
         measurement_unit="gini_index",
         current_value=0.45
     )
-    
+
     # Environmental sustainability indicator
     carbon_footprint = Indicator(
-        label="Carbon Emissions per Capita", 
+        label="Carbon Emissions per Capita",
         value_category=ValueCategory.ENVIRONMENTAL,
         measurement_unit="tons_co2_per_person",
         current_value=8.2
     )
     ```
-    
+
     ### Multi-Dimensional Value Analysis
     ```python
     # Complex sustainability indicator spanning multiple value categories
@@ -211,10 +211,10 @@ class ValueCategory(Enum):
         measurement_unit="composite_score",
         current_value=68.5
     )
-    # Note: Secondary categories can be tracked through metadata or 
+    # Note: Secondary categories can be tracked through metadata or
     # additional indicator relationships
     ```
-    
+
     ### Policy Impact Measurement
     ```python
     # Institutional capacity indicator for policy evaluation
@@ -224,7 +224,7 @@ class ValueCategory(Enum):
         measurement_unit="percentile_rank",
         current_value=85.2
     )
-    
+
     # Educational outcome indicator
     literacy_rate = Indicator(
         label="Adult Literacy Rate",
@@ -233,31 +233,31 @@ class ValueCategory(Enum):
         current_value=99.1
     )
     ```
-    
+
     ## Value Category Guidance
-    
+
     **Core Hayden Categories** (from original SFM framework):
     - ECONOMIC: Market transactions, monetary flows, financial returns
-    - SOCIAL: Distributional equity, social cohesion, community well-being  
+    - SOCIAL: Distributional equity, social cohesion, community well-being
     - ENVIRONMENTAL: Resource stocks, ecological integrity, sustainability
     - CULTURAL: Norms, beliefs, heritage, knowledge systems
     - INSTITUTIONAL: Governance quality, rule consistency, organizational capacity
     - TECHNOLOGICAL: Knowledge base, production techniques, innovation systems
-    
+
     **Extended Categories** (for comprehensive analysis):
     Use when core categories are insufficient for capturing specific value dimensions
     relevant to your SFM analysis context.
-    
+
     ## Integration with SFM Models
-    
+
     ValueCategory integrates with:
     - `Indicator`: Primary classification for measurement metrics
     - `ValueSystem`: Hierarchical value structure definition
     - `PolicyInstrument`: Target value areas for policy intervention
     - `ChangeProcess`: Value dimensions affected by institutional change
-    
+
     ## References
-    
+
     - Hayden, F.G. (2006). "Policymaking for a Good Society", Chapter 4: Value Theory
     - Hayden, F.G. (1982). "Social Fabric Matrix: From Perspective to Analytical Tool"
     - Tool, M.R. (1977). "A Social Value Theory in Neoinstitutional Economics"
@@ -323,13 +323,14 @@ class ValueCategory(Enum):
     @classmethod
     def get_core_categories(cls) -> Set['ValueCategory']:
         """Return the six core Hayden framework categories."""
-        return {cls.ECONOMIC, cls.SOCIAL, cls.ENVIRONMENTAL, 
+        return {cls.ECONOMIC, cls.SOCIAL, cls.ENVIRONMENTAL,
                 cls.CULTURAL, cls.INSTITUTIONAL, cls.TECHNOLOGICAL}
-    
+
     @classmethod
     def get_extended_categories(cls) -> Set['ValueCategory']:
         """Return extended categories beyond core framework."""
         return set(cls) - cls.get_core_categories()
+
 
 class InstitutionLayer(Enum):
     """
@@ -341,33 +342,33 @@ represents
     Hayden's framework distinguishes between formal constitutional rules, organizational
     structures, and informal cultural norms, providing a comprehensive taxonomy for
     institutional analysis in SFM applications.
-    
+
     ## Theoretical Foundation
-    
+
     Hayden's institutional layering concept recognizes that social coordination occurs
     through multiple, interconnected institutional levels. This hierarchical structure
     helps analysts understand how formal rules, organizational structures, and cultural
     norms interact to shape economic behavior and social outcomes.
-    
+
     ## Core Institutional Layers (Hayden's Framework)
-    
+
     **FORMAL_RULE**: Constitutional and legal frameworks
     - Examples: Constitutions, statutes, property law, regulatory frameworks
     - Function: Establishes formal constraints and rights
     - SFM Role: Foundation for institutional matrix analysis
-    
-    **ORGANIZATION**: Structured collective entities  
+
+    **ORGANIZATION**: Structured collective entities
     - Examples: Firms, government agencies, NGOs, labor unions, cooperatives
     - Function: Implements and operationalizes formal rules
     - SFM Role: Key actors in resource flows and value creation
-    
+
     **INFORMAL_NORM**: Cultural practices and social expectations
     - Examples: Customs, habits, social expectations, professional ethics
     - Function: Guides behavior through social coordination mechanisms
     - SFM Role: Influences how formal institutions actually function
-    
+
     ## Usage Examples
-    
+
     ### Basic Institution Classification
     ```python
     # Formal legal institution
@@ -376,14 +377,14 @@ represents
         layer=InstitutionLayer.FORMAL_RULE,
         description="Federal environmental regulation"
     )
-    
+
     # Organizational institution
     epa = Institution(
-        label="Environmental Protection Agency", 
+        label="Environmental Protection Agency",
         layer=InstitutionLayer.ORGANIZATION,
         description="Federal environmental regulatory agency"
     )
-    
+
     # Informal institutional norm
     recycling_norm = Institution(
         label="Community Recycling Practices",
@@ -391,7 +392,7 @@ represents
         description="Local cultural practices for waste management"
     )
     ```
-    
+
     ### Institutional Relationship Analysis
     ```python
     # Hierarchical institutional relationships
@@ -400,21 +401,21 @@ represents
     congress = Institution(label="US Congress", layer=InstitutionLayer.ORGANIZATION)
     political_norms = Institution(label="Democratic Norms",
                                   layer=InstitutionLayer.INFORMAL_NORM)
-    
+
     # Relationships showing institutional hierarchy
     implements_rel = Relationship(
         source_id=congress.id,
         target_id=constitution.id,
         kind=RelationshipKind.IMPLEMENTS
     )
-    
+
     guided_by_rel = Relationship(
         source_id=congress.id,
         target_id=political_norms.id,
         kind=RelationshipKind.GUIDED_BY
     )
     ```
-    
+
     ### Extended Institutional Forms
     ```python
     # Market mechanism as institutional form
@@ -423,14 +424,14 @@ represents
         layer=InstitutionLayer.MARKET_MECHANISM,
         description="Market-based environmental policy instrument"
     )
-    
+
     # International institutional regime
     paris_accord = Institution(
         label="Paris Climate Agreement",
         layer=InstitutionLayer.INTERNATIONAL_REGIME,
         description="Global climate governance framework"
     )
-    
+
     # Hybrid public-private institution
     public_private_partnership = Institution(
         label="Infrastructure PPP",
@@ -438,9 +439,9 @@ represents
         description="Mixed governance arrangement for infrastructure"
     )
     ```
-    
+
     ## Integration with SFM Analysis
-    
+
     InstitutionLayer enables:
     - **Hierarchical Analysis**: Understanding how different institutional levels
   interact
@@ -448,19 +449,19 @@ represents
   institutional layers
     - **Policy Design**: Identifying appropriate institutional levels for intervention
     - **Governance Assessment**: Evaluating institutional capacity at different layers
-    
+
     ## Extended Categories
-    
+
     Beyond Hayden's core three layers, the enum includes additional institutional forms
     relevant for contemporary SFM analysis:
-    
+
     - **MARKET_MECHANISM**: Price systems, contracts, trading platforms
-    - **NETWORK**: Collaborative structures, alliances, partnerships  
+    - **NETWORK**: Collaborative structures, alliances, partnerships
     - **INTERNATIONAL_REGIME**: Transnational agreements, global governance
     - **HYBRID_INSTITUTION**: Public-private partnerships, mixed governance forms
-    
+
     ## References
-    
+
     - Hayden, F.G. (2006). "Policymaking for a Good Society", Chapter 3:
   Institutional Structure
     - Hayden, F.G. (1982). "Social Fabric Matrix: From Perspective to Analytical Tool"
@@ -499,25 +500,25 @@ class ResourceType(Enum):
     institutional and technological analysis. This comprehensive taxonomy enables
     detailed tracking of resource flows, dependencies, and transformations in
     SFM models.
-    
+
     ## Theoretical Background
-    
+
     Resource classification in SFM analysis extends beyond traditional economic
     categories to include social, institutional, and informational resources crucial
     for understanding modern socio-economic systems. This approach reflects the
     institutional economics recognition that economic activity depends on diverse
     resource types, many of which are not captured in conventional economic accounting.
-    
+
     ## Core Resource Categories
-    
+
     **Traditional Economic Resources** (Hayden's original framework):
     - NATURAL: Land, water, raw minerals, biological resources
-    - PRODUCED: Machinery, infrastructure, manufactured capital goods  
+    - PRODUCED: Machinery, infrastructure, manufactured capital goods
     - HUMAN: Labor, human capital, skills, knowledge embodied in people
     - INFORMATION: Data, R&D findings, patents, codified knowledge
-    
+
     ## Usage Examples
-    
+
     ### Basic Resource Creation
     ```python
     # Natural resource
@@ -526,21 +527,21 @@ class ResourceType(Enum):
         rtype=ResourceType.NATURAL,
         description="Fertile soil suitable for crop production"
     )
-    
-    # Produced capital resource  
+
+    # Produced capital resource
     manufacturing_equipment = Resource(
         label="Factory Equipment",
         rtype=ResourceType.PRODUCED,
         description="Industrial machinery for production"
     )
-    
+
     # Human capital resource
     skilled_workforce = Resource(
         label="Skilled Engineering Team",
         rtype=ResourceType.HUMAN,
         description="Engineers with renewable energy expertise"
     )
-    
+
     # Information resource
     climate_data = Resource(
         label="Climate Research Database",
@@ -548,7 +549,7 @@ class ResourceType(Enum):
         description="Historical weather and climate datasets"
     )
     ```
-    
+
     ### Financial and Economic Resources
     ```python
     # Financial capital
@@ -557,7 +558,7 @@ class ResourceType(Enum):
         rtype=ResourceType.FINANCIAL,
         description="Capital available for renewable energy projects"
     )
-    
+
     # Credit resource
     development_loan = Resource(
         label="Infrastructure Development Loan",
@@ -565,16 +566,16 @@ class ResourceType(Enum):
         description="Long-term financing for public infrastructure"
     )
     ```
-    
-    ### Social and Network Resources  
+
+    ### Social and Network Resources
     ```python
     # Social capital
     community_networks = Resource(
-        label="Local Business Networks", 
+        label="Local Business Networks",
         rtype=ResourceType.SOCIAL_CAPITAL,
         description="Trust relationships between local enterprises"
     )
-    
+
     # Reputational resource
     brand_credibility = Resource(
         label="Corporate Environmental Reputation",
@@ -582,7 +583,7 @@ class ResourceType(Enum):
         description="Public trust in company's sustainability practices"
     )
     ```
-    
+
     ### Infrastructure and Physical Resources
     ```python
     # Built infrastructure
@@ -591,71 +592,71 @@ class ResourceType(Enum):
         rtype=ResourceType.TRANSPORTATION,
         description="Roads, rail, and public transit infrastructure"
     )
-    
-    # Utility infrastructure  
+
+    # Utility infrastructure
     power_grid = Resource(
         label="Electrical Grid System",
         rtype=ResourceType.UTILITY,
         description="Electricity generation and distribution network"
     )
     ```
-    
+
     ## Resource Flow Analysis
-    
+
     Resources in SFM analysis participate in various flow relationships:
-    
+
     ```python
     # Resource transformation flow
     iron_ore = Resource(label="Iron Ore", rtype=ResourceType.MINERAL)
     steel = Resource(label="Steel", rtype=ResourceType.PRODUCED)
-    
+
     transformation_flow = Flow(
         label="Steel Production",
         nature=FlowNature.CONVERSION,
         flow_type=FlowType.MATERIAL
     )
-    
+
     # Relationships showing resource transformation
     input_rel = Relationship(
         source_id=iron_ore.id,
         target_id=transformation_flow.id,
         kind=RelationshipKind.PROVIDES_INPUT
     )
-    
+
     output_rel = Relationship(
         source_id=transformation_flow.id,
-        target_id=steel.id, 
+        target_id=steel.id,
         kind=RelationshipKind.PRODUCES
     )
     ```
-    
+
     ## Extended Resource Categories
-    
+
     **Energy Resources**: FOSSIL_FUEL, RENEWABLE, NUCLEAR, BIOENERGY
     - Enable detailed energy system analysis
-    
-    **Digital Resources**: DIGITAL, COMPUTATIONAL, DATA, NETWORK_INFRASTRUCTURE  
+
+    **Digital Resources**: DIGITAL, COMPUTATIONAL, DATA, NETWORK_INFRASTRUCTURE
     - Support analysis of digital economy and information systems
-    
+
     **Institutional Resources**: ORGANIZATIONAL, REGULATORY, MANAGERIAL
     - Capture institutional capacity and governance resources
-    
+
     **Temporal Resources**: TEMPORAL, HISTORICAL, FUTURE_OPTION
     - Enable analysis of time-dependent and path-dependent processes
-    
+
     ## Integration with SFM Models
-    
+
     ResourceType integrates with:
     - `Resource`: Primary classification for all resource entities
     - `Flow`: Specification of what type of resource is flowing
     - `Actor`: Understanding resource ownership and control
     - `PolicyInstrument`: Targeting specific resource types for policy intervention
-    
+
     ## References
-    
+
     - Hayden, F.G. (2006). "Policymaking for a Good Society", Chapter 5:
   Resource Systems
-    - Commons, J.R. (1924). "Legal Foundations of Capitalism" 
+    - Commons, J.R. (1924). "Legal Foundations of Capitalism"
     - Ostrom, E. (1990). "Governing the Commons: The Evolution of Institutions
   for Collective Action"
     - Lin, N. (2001). "Social Capital: A Theory of Social Structure and Action"
@@ -730,23 +731,23 @@ class FlowNature(Enum):
     information, value, and other elements through socio-economic systems.
     Essential for understanding system dynamics and transformation processes
     in Hayden's institutional analysis framework.
-    
+
     ## Theoretical Foundation
-    
+
     Flow analysis in SFM recognizes that socio-economic systems are fundamentally
     characterized by movements of resources, information, and value between actors
     and institutions. Understanding flow patterns is crucial for identifying
     system bottlenecks, dependencies, and transformation opportunities.
-    
+
     ## Core Flow Types
-    
+
     **Basic Flow Directions**:
     - INPUT: Resources or value entering a process or actor
-    - OUTPUT: Products, services, or value leaving a process or actor  
+    - OUTPUT: Products, services, or value leaving a process or actor
     - TRANSFER: Direct exchange between actors without transformation
-    
+
     ## Usage Examples
-    
+
     ### Basic Flow Creation
     ```python
     # Input flow - resources entering production
@@ -755,14 +756,14 @@ class FlowNature(Enum):
         nature=FlowNature.INPUT,
         flow_type=FlowType.MATERIAL
     )
-    
+
     # Output flow - products leaving production
     finished_goods_flow = Flow(
         label="Manufactured Products",
         nature=FlowNature.OUTPUT,
         flow_type=FlowType.MATERIAL
     )
-    
+
     # Transfer flow - direct exchange
     payment_flow = Flow(
         label="Payment for Goods",
@@ -770,7 +771,7 @@ class FlowNature(Enum):
         flow_type=FlowType.FINANCIAL
     )
     ```
-    
+
     ### Transformation-Based Flows
     ```python
     # Conversion of one resource type to another
@@ -779,14 +780,14 @@ class FlowNature(Enum):
         nature=FlowNature.CONVERSION,
         flow_type=FlowType.ENERGY
     )
-    
+
     # Resource extraction from natural systems
     mining_flow = Flow(
         label="Mineral Extraction",
         nature=FlowNature.EXTRACTION,
         flow_type=FlowType.MATERIAL
     )
-    
+
     # Recycling and circular economy flows
     recycling_flow = Flow(
         label="Waste Paper Recycling",
@@ -794,7 +795,7 @@ class FlowNature(Enum):
         flow_type=FlowType.MATERIAL
     )
     ```
-    
+
     ### Medium-Specific Flows
     ```python
     # Financial flows
@@ -803,14 +804,14 @@ class FlowNature(Enum):
         nature=FlowNature.FINANCIAL,
         flow_type=FlowType.FINANCIAL
     )
-    
+
     # Information flows
     data_sharing = Flow(
         label="Research Data Sharing",
         nature=FlowNature.INFORMATION,
         flow_type=FlowType.INFORMATION
     )
-    
+
     # Social flows
     knowledge_transfer = Flow(
         label="Skills Transfer Program",
@@ -818,7 +819,7 @@ class FlowNature(Enum):
         flow_type=FlowType.SOCIAL
     )
     ```
-    
+
     ### Temporal Pattern Flows
     ```python
     # Continuous steady flows
@@ -827,14 +828,14 @@ class FlowNature(Enum):
         nature=FlowNature.CONTINUOUS,
         flow_type=FlowType.ENERGY
     )
-    
+
     # Seasonal or cyclical flows
     agricultural_cycle = Flow(
         label="Seasonal Crop Harvesting",
         nature=FlowNature.SEASONAL,
         flow_type=FlowType.MATERIAL
     )
-    
+
     # Feedback information flows
     performance_feedback = Flow(
         label="Performance Monitoring Data",
@@ -842,22 +843,22 @@ class FlowNature(Enum):
         flow_type=FlowType.INFORMATION
     )
     ```
-    
+
     ## Flow Integration with SFM Models
-    
+
     ### Actor-to-Actor Flows
     ```python
     # Create actors
     manufacturer = Actor(label="Manufacturing Company", sector="Industry")
     supplier = Actor(label="Raw Material Supplier", sector="Industry")
-    
+
     # Create flow between actors
     supply_chain_flow = Flow(
         label="Component Supply",
         nature=FlowNature.TRANSFER,
         flow_type=FlowType.MATERIAL
     )
-    
+
     # Establish flow relationships
     supply_rel = Relationship(
         source_id=supplier.id,
@@ -866,7 +867,7 @@ class FlowNature(Enum):
         flows=[supply_chain_flow.id]
     )
     ```
-    
+
     ### Complex Flow Networks
     ```python
     # Multi-directional flows in circular economy
@@ -875,38 +876,38 @@ class FlowNature(Enum):
         nature=FlowNature.WASTE,
         flow_type=FlowType.MATERIAL
     )
-    
+
     compost_flow = Flow(
         label="Compost Production",
         nature=FlowNature.RECYCLING,
         flow_type=FlowType.MATERIAL
     )
-    
+
     nutrient_flow = Flow(
         label="Soil Nutrient Return",
         nature=FlowNature.CIRCULAR,
         flow_type=FlowType.MATERIAL
     )
     ```
-    
+
     ## Flow Pattern Categories
-    
+
     **Transformation Flows**: CONVERSION, EXTRACTION, PROCESSING, RECYCLING
     - Track resource transformation processes
-    
+
     **Directional Flows**: CIRCULAR, CASCADING, RECIPROCAL, DISTRIBUTIVE
     - Analyze flow patterns and system structure
-    
+
     **Purpose Flows**: PROVISIONING, REGULATING, SUPPORTING, INVESTMENT
     - Understand functional roles of different flows
-    
+
     **Governance Flows**: MANDATE, COMPLIANCE, AUTHORIZATION, REPORTING
     - Track institutional control and coordination mechanisms
-    
+
     ## Integration with Flow Validation
-    
+
     FlowNature works with FlowType and validation systems:
-    
+
     ```python
     # Valid combination - automatically validated
     financial_transfer = Flow(
@@ -914,13 +915,13 @@ class FlowNature(Enum):
         nature=FlowNature.FINANCIAL,  # Financial nature
         flow_type=FlowType.FINANCIAL  # Financial type
     )
-    
+
     # Invalid combination - will raise validation error
     # Flow(nature=FlowNature.FINANCIAL, flow_type=FlowType.MATERIAL)
     ```
-    
+
     ## References
-    
+
     - Hayden, F.G. (2006). "Policymaking for a Good Society", Chapter 6: System Flows
     - Georgescu-Roegen, N. (1971). "The Entropy Law and the Economic Process"
     - Meadows, D.H. (2008). "Thinking in Systems: A Primer"
@@ -1007,12 +1008,12 @@ class FlowType(Enum):
     Defines the fundamental types of flows that can occur between actors, processes,
     and resources in socio-economic systems. This classification complements FlowNature
     by specifying the medium or content type of what flows through the system.
-    
+
     ## Usage with FlowNature
-    
+
     FlowType works in combination with FlowNature to provide complete flow
     specification:
-    
+
     ```python
     # Financial payment flow
     payment = Flow(
@@ -1020,14 +1021,14 @@ class FlowType(Enum):
         nature=FlowNature.TRANSFER,     # How it flows (direct transfer)
         flow_type=FlowType.FINANCIAL    # What flows (money/financial instruments)
     )
-    
+
     # Information sharing flow
     data_sharing = Flow(
         label="Research Data Sharing",
         nature=FlowNature.INFORMATION,  # How it flows (information pattern)
         flow_type=FlowType.INFORMATION  # What flows (data/knowledge)
     )
-    
+
     # Material production flow
     manufacturing = Flow(
         label="Product Manufacturing",
@@ -1035,25 +1036,25 @@ class FlowType(Enum):
         flow_type=FlowType.MATERIAL     # What flows (physical goods)
     )
     ```
-    
+
     ## Flow Type Categories
-    
+
     - **MATERIAL**: Physical goods, substances, manufactured products
     - **ENERGY**: Power, heat, electricity, mechanical energy
     - **INFORMATION**: Data, knowledge, signals, communications
     - **FINANCIAL**: Money, credit, financial instruments, investments
     - **SOCIAL**: Relationships, trust, social capital, cultural practices
-    
+
     ## Integration with Validation
-    
+
     FlowType combinations with FlowNature are automatically validated:
-    
+
     ```python
     # Valid combinations
     Flow(nature=FlowNature.FINANCIAL, flow_type=FlowType.FINANCIAL)  # ✓
     Flow(nature=FlowNature.MATERIAL, flow_type=FlowType.MATERIAL)    # ✓
     Flow(nature=FlowNature.ENERGY, flow_type=FlowType.ENERGY)        # ✓
-    
+
     # Invalid combinations (will raise validation error)
     # Flow(nature=FlowNature.FINANCIAL, flow_type=FlowType.MATERIAL)  # ✗
     ```
@@ -1073,24 +1074,24 @@ class PolicyInstrumentType(Enum):
     and enforced in socio-economic systems, based on institutional economics and
     public policy analysis frameworks. Essential for understanding how policy goals
     are translated into specific implementation strategies.
-    
+
     ## Theoretical Background
-    
+
     Policy instrument classification recognizes that governments and institutions have
     multiple tools available for achieving policy objectives. The choice of instrument
     affects implementation costs, compliance mechanisms, distributional impacts, and
     political feasibility. This taxonomy enables systematic analysis of policy design
     choices within SFM frameworks.
-    
+
     ## Core Instrument Types
-    
+
     **REGULATORY**: Command-and-control mechanisms using legal authority
     **ECONOMIC**: Market-based mechanisms using financial incentives
     **VOLUNTARY**: Cooperative mechanisms relying on voluntary compliance
     **INFORMATION**: Education and disclosure mechanisms using information provision
-    
+
     ## Usage Examples
-    
+
     ### Regulatory Instruments
     ```python
     # Environmental regulation
@@ -1100,16 +1101,16 @@ class PolicyInstrumentType(Enum):
         target_behavior="Reduce vehicle emissions",
         compliance_mechanism="Mandatory testing and certification"
     )
-    
+
     # Zoning regulation
     zoning_law = PolicyInstrument(
-        label="Industrial Zoning Restrictions", 
+        label="Industrial Zoning Restrictions",
         instrument_type=PolicyInstrumentType.REGULATORY,
         target_behavior="Control industrial development location",
         compliance_mechanism="Building permit requirements"
     )
     ```
-    
+
     ### Economic Instruments
     ```python
     # Market-based environmental policy
@@ -1119,7 +1120,7 @@ class PolicyInstrumentType(Enum):
         target_behavior="Reduce greenhouse gas emissions",
         compliance_mechanism="Tax collection system"
     )
-    
+
     # Subsidy program
     renewable_subsidy = PolicyInstrument(
         label="Solar Panel Installation Subsidy",
@@ -1128,7 +1129,7 @@ class PolicyInstrumentType(Enum):
         compliance_mechanism="Rebate application process"
     )
     ```
-    
+
     ### Voluntary Instruments
     ```python
     # Industry self-regulation
@@ -1138,7 +1139,7 @@ class PolicyInstrumentType(Enum):
         target_behavior="Adopt sustainable business practices",
         compliance_mechanism="Self-reporting and peer review"
     )
-    
+
     # Public-private partnership
     energy_efficiency_agreement = PolicyInstrument(
         label="Voluntary Energy Efficiency Agreement",
@@ -1147,7 +1148,7 @@ class PolicyInstrumentType(Enum):
         compliance_mechanism="Performance monitoring and recognition"
     )
     ```
-    
+
     ### Information Instruments
     ```python
     # Public education campaign
@@ -1157,7 +1158,7 @@ class PolicyInstrumentType(Enum):
         target_behavior="Reduce household water consumption",
         compliance_mechanism="Public awareness and social norms"
     )
-    
+
     # Disclosure requirement
     environmental_reporting = PolicyInstrument(
         label="Corporate Environmental Disclosure",
@@ -1166,28 +1167,28 @@ class PolicyInstrumentType(Enum):
         compliance_mechanism="Mandatory reporting standards"
     )
     ```
-    
+
     ## Policy Instrument Networks
-    
+
     Complex policy problems often require multiple instrument types:
-    
+
     ```python
     # Climate policy instrument mix
     regulatory_component = PolicyInstrument(
         label="Renewable Energy Standard",
         instrument_type=PolicyInstrumentType.REGULATORY
     )
-    
+
     economic_component = PolicyInstrument(
-        label="Carbon Pricing System", 
+        label="Carbon Pricing System",
         instrument_type=PolicyInstrumentType.ECONOMIC
     )
-    
+
     information_component = PolicyInstrument(
         label="Energy Efficiency Labeling",
         instrument_type=PolicyInstrumentType.INFORMATION
     )
-    
+
     # Relationships showing instrument coordination
     coordinates_rel = Relationship(
         source_id=regulatory_component.id,
@@ -1195,17 +1196,17 @@ class PolicyInstrumentType(Enum):
         kind=RelationshipKind.COORDINATES_WITH
     )
     ```
-    
+
     ## Integration with SFM Analysis
-    
+
     PolicyInstrumentType enables:
     - **Implementation Analysis**: Understanding how policies are operationalized
     - **Effectiveness Assessment**: Evaluating instrument performance
     - **Design Optimization**: Selecting appropriate instruments for policy goals
     - **Institutional Mapping**: Connecting instruments to implementing organizations
-    
+
     ## References
-    
+
     - Hayden, F.G. (2006). "Policymaking for a Good Society", Chapter 8:
   Policy Instruments
     - Hood, C. (1983). "The Tools of Government"
@@ -1226,24 +1227,24 @@ class ChangeType(Enum):
     following institutional economics and innovation theory. Essential for understanding
     how institutions, technologies, and social systems evolve over time within
     Hayden's Social Fabric Matrix framework.
-    
+
     ## Theoretical Background
-    
+
     Change analysis in SFM recognizes that socio-economic systems undergo various
     types of transformation processes. Understanding change patterns is crucial for
     policy design, institutional development, and system intervention strategies.
     Hayden's framework emphasizes how different change types require different
     analytical approaches and policy responses.
-    
+
     ## Core Change Types
-    
+
     **EVOLUTIONARY**: Gradual, adaptive change through small variations
     **REVOLUTIONARY**: Rapid, disruptive transformation of system structure
     **CYCLICAL**: Recurring patterns of change following predictable cycles
     **INCREMENTAL**: Small, continuous improvements within existing frameworks
-    
+
     ## Usage Examples
-    
+
     ### Evolutionary Change Processes
     ```python
     # Gradual institutional adaptation
@@ -1253,7 +1254,7 @@ class ChangeType(Enum):
         description="Gradual adaptation of financial regulations to new technologies",
         success_probability=0.75
     )
-    
+
     # Technology adoption process
     digital_transformation = ChangeProcess(
         label="Digital Government Services",
@@ -1262,7 +1263,7 @@ class ChangeType(Enum):
         change_agents=[government_agency.id, technology_vendor.id]
     )
     ```
-    
+
     ### Revolutionary Change Processes
     ```python
     # Disruptive institutional change
@@ -1273,7 +1274,7 @@ class ChangeType(Enum):
         success_probability=0.40,
         resistance_factors=[incumbent_institutions.id, regulatory_culture.id]
     )
-    
+
     # Technological disruption
     ai_automation = ChangeProcess(
         label="AI-Driven Process Automation",
@@ -1282,7 +1283,7 @@ class ChangeType(Enum):
         change_trajectory=[current_state, transition_state, future_state]
     )
     ```
-    
+
     ### Cyclical Change Processes
     ```python
     # Economic cycles
@@ -1292,7 +1293,7 @@ class ChangeType(Enum):
         description="Recurring patterns of economic expansion and contraction",
         change_trajectory=[expansion, peak, contraction, trough]
     )
-    
+
     # Political cycles
     electoral_cycle = ChangeProcess(
         label="Electoral Policy Cycle",
@@ -1301,7 +1302,7 @@ class ChangeType(Enum):
         success_probability=0.85
     )
     ```
-    
+
     ### Incremental Change Processes
     ```python
     # Continuous improvement
@@ -1312,7 +1313,7 @@ class ChangeType(Enum):
         success_probability=0.90,
         change_agents=[management_team.id, operations_staff.id]
     )
-    
+
     # Policy fine-tuning
     regulation_adjustment = ChangeProcess(
         label="Regulatory Parameter Adjustment",
@@ -1321,11 +1322,11 @@ class ChangeType(Enum):
         resistance_factors=[]  # Minimal resistance for small changes
     )
     ```
-    
+
     ## Change Process Integration
-    
+
     ChangeType integrates with other SFM components:
-    
+
     ### With Institutions and Actors
     ```python
     # Institutional change with actor involvement
@@ -1333,19 +1334,19 @@ class ChangeType(Enum):
         label="Environmental Protection Agency",
         layer=InstitutionLayer.ORGANIZATION
     )
-    
+
     change_agent = Actor(
         label="Environmental Activist Group",
         sector="Non-profit"
     )
-    
+
     institutional_reform = ChangeProcess(
         label="EPA Mandate Expansion",
         change_type=ChangeType.EVOLUTIONARY,
         change_agents=[change_agent.id],
         description="Gradual expansion of environmental protection authority"
     )
-    
+
     # Relationship showing change influence
     influences_rel = Relationship(
         source_id=change_agent.id,
@@ -1354,7 +1355,7 @@ class ChangeType(Enum):
         description="Advocacy influence on institutional change"
     )
     ```
-    
+
     ### With Policy Instruments
     ```python
     # Policy change with instrument modification
@@ -1362,18 +1363,18 @@ class ChangeType(Enum):
         label="Traditional Command-Control Regulation",
         instrument_type=PolicyInstrumentType.REGULATORY
     )
-    
+
     new_policy = PolicyInstrument(
         label="Market-Based Environmental Policy",
         instrument_type=PolicyInstrumentType.ECONOMIC
     )
-    
+
     policy_transition = ChangeProcess(
         label="Regulatory Instrument Shift",
         change_type=ChangeType.EVOLUTIONARY,
         description="Transition from command-control to market-based regulation"
     )
-    
+
     # Relationships showing policy evolution
     transforms_rel = Relationship(
         source_id=policy_transition.id,
@@ -1381,20 +1382,20 @@ class ChangeType(Enum):
         kind=RelationshipKind.TRANSFORMS
     )
     ```
-    
+
     ## Change Analysis Patterns
-    
+
     Different change types require different analytical approaches:
-    
+
     - **Evolutionary**: Focus on adaptation mechanisms and gradual feedback
-    - **Revolutionary**: Analyze disruption sources and transformation triggers  
+    - **Revolutionary**: Analyze disruption sources and transformation triggers
     - **Cyclical**: Identify cycle patterns and timing factors
     - **Incremental**: Track cumulative effects and optimization processes
-    
+
     ## Integration with Temporal Dynamics
-    
+
     ChangeType works with temporal analysis:
-    
+
     ```python
     # Change process with temporal tracking
     institutional_change = ChangeProcess(
@@ -1410,9 +1411,9 @@ class ChangeType(Enum):
         )
     )
     ```
-    
+
     ## References
-    
+
     - Hayden, F.G. (2006). "Policymaking for a Good Society", Chapter 9:
   Institutional Change
     - North, D.C. (1990). "Institutions, Institutional Change and Economic Performance"
@@ -1435,23 +1436,23 @@ class BehaviorPatternType(Enum):
     socio-economic systems, particularly relevant to Hayden's analysis of
     ceremonial versus instrumental behavior patterns that shape institutional
     dynamics and economic outcomes.
-    
+
     ## Theoretical Background
-    
+
     Hayden's institutional analysis distinguishes between different behavioral
     patterns that either support or hinder adaptive institutional development.
     Understanding these patterns is crucial for predicting institutional change
     and designing effective policy interventions.
-    
+
     ## Core Behavior Patterns
-    
+
     - **HABITUAL**: Routine, unconscious behaviors following established patterns
     - **STRATEGIC**: Deliberate, goal-oriented behaviors with explicit objectives
     - **ADAPTIVE**: Flexible, responsive behaviors that adjust to changing conditions
     - **RESISTANT**: Change-resistant, conservative behaviors that maintain status quo
-    
+
     ## Usage Examples
-    
+
     ```python
     # Habitual behavior pattern
     routine_compliance = BehaviorPattern(
@@ -1459,14 +1460,14 @@ class BehaviorPatternType(Enum):
         pattern_type=BehaviorPatternType.HABITUAL,
         description="Routine following of established regulatory procedures"
     )
-    
+
     # Strategic behavior pattern
     market_positioning = BehaviorPattern(
         label="Competitive Market Strategy",
         pattern_type=BehaviorPatternType.STRATEGIC,
         description="Deliberate positioning for market advantage"
     )
-    
+
     # Adaptive behavior pattern
     crisis_response = BehaviorPattern(
         label="Crisis Adaptation Response",
@@ -1488,9 +1489,9 @@ class FeedbackPolarity(Enum):
     Defines whether a feedback loop reinforces or balances system behavior.
     Essential for understanding system stability, growth patterns, and
     intervention points in Social Fabric Matrix analysis.
-    
+
     ## Usage Examples
-    
+
     ```python
     # Reinforcing feedback (amplifies change)
     growth_feedback = Feedback(
@@ -1498,8 +1499,8 @@ class FeedbackPolarity(Enum):
         polarity=FeedbackPolarity.REINFORCING,
         description="Investment leads to growth, which attracts more investment"
     )
-    
-    # Balancing feedback (stabilizes system)  
+
+    # Balancing feedback (stabilizes system)
     regulatory_feedback = Feedback(
         label="Market Regulation Feedback",
         polarity=FeedbackPolarity.BALANCING,
@@ -1561,9 +1562,9 @@ class SystemPropertyType(Enum):
     that can be measured and tracked in Social Fabric Matrix systems.
     Essential for evaluating overall system performance, health, and
     development outcomes in institutional analysis.
-    
+
     ## Usage Examples
-    
+
     ```python
     # Structural system property
     network_density = SystemProperty(
@@ -1573,7 +1574,7 @@ class SystemPropertyType(Enum):
         unit="density_ratio",
         description="Measure of interconnectedness in institutional network"
     )
-    
+
     # Performance system property
     policy_effectiveness = SystemProperty(
         label="Policy Implementation Effectiveness",
@@ -1582,7 +1583,7 @@ class SystemPropertyType(Enum):
         unit="percentage",
         description="Overall effectiveness of policy implementation"
     )
-    
+
     # Sustainability system property
     resource_efficiency = SystemProperty(
         label="Resource Use Efficiency",
@@ -1610,42 +1611,42 @@ class RelationshipKind(Enum):
 comprehensive
     taxonomy enables detailed mapping of institutional dependencies, resource flows,
     power relationships, and system dynamics essential for SFM analysis.
-    
+
     ## Theoretical Foundation
-    
+
     Relationship analysis in SFM recognizes that socio-economic systems are
 fundamentally
     structured by relationships between actors, institutions, and resources. Hayden's
     framework emphasizes how these relationships create patterns of coordination,
     dependency, and power that shape economic outcomes and social welfare.
-    
+
     ## Core Relationship Categories
-    
+
     **Governance Relationships**: Authority, regulation, and institutional control
-    **Resource Flow Relationships**: Economic exchanges and resource movements  
+    **Resource Flow Relationships**: Economic exchanges and resource movements
     **Knowledge Relationships**: Information transfer and learning processes
     **Social Relationships**: Collaboration, coordination, and mutual support
     **Influence Relationships**: Power dynamics and behavioral modification
-    
+
     ## Usage Examples
-    
+
     ### Governance and Authority Relationships
     ```python
     # Government regulatory authority
     epa = Actor(label="EPA", sector="Government")
     chemical_company = Actor(label="Chemical Manufacturer", sector="Industry")
-    
+
     regulatory_rel = Relationship(
         source_id=epa.id,
         target_id=chemical_company.id,
         kind=RelationshipKind.REGULATES,
         description="Environmental compliance oversight"
     )
-    
+
     # Policy implementation
     city_government = Actor(label="City Government", sector="Public")
     zoning_policy = Policy(label="Zoning Regulations", authority="City")
-    
+
     enacts_rel = Relationship(
         source_id=city_government.id,
         target_id=zoning_policy.id,
@@ -1653,35 +1654,35 @@ fundamentally
         description="Local zoning law creation"
     )
     ```
-    
+
     ### Economic and Resource Flow Relationships
     ```python
     # Supply chain relationships
     supplier = Actor(label="Raw Material Supplier", sector="Industry")
     manufacturer = Actor(label="Manufacturer", sector="Industry")
-    
+
     supply_rel = Relationship(
         source_id=supplier.id,
         target_id=manufacturer.id,
         kind=RelationshipKind.SUPPLIES,
         description="Raw material provision"
     )
-    
+
     # Financial relationships
     bank = Actor(label="Development Bank", sector="Financial")
     startup = Actor(label="Green Tech Startup", sector="Technology")
-    
+
     funding_rel = Relationship(
         source_id=bank.id,
         target_id=startup.id,
         kind=RelationshipKind.FUNDS,
         description="Venture capital investment"
     )
-    
+
     # Resource transformation
     solar_panel = Resource(label="Solar Panel", rtype=ResourceType.PRODUCED)
     electricity = Resource(label="Electrical Energy", rtype=ResourceType.RENEWABLE)
-    
+
     conversion_rel = Relationship(
         source_id=solar_panel.id,
         target_id=electricity.id,
@@ -1689,24 +1690,24 @@ fundamentally
         description="Solar energy conversion"
     )
     ```
-    
+
     ### Knowledge and Information Relationships
     ```python
     # Research and education
     university = Actor(label="State University", sector="Education")
     students = Actor(label="Graduate Students", sector="Education")
-    
+
     education_rel = Relationship(
         source_id=university.id,
         target_id=students.id,
         kind=RelationshipKind.EDUCATES,
         description="Graduate degree programs"
     )
-    
+
     # Information flow
     weather_service = Actor(label="National Weather Service", sector="Government")
     farmers = Actor(label="Agricultural Producers", sector="Agriculture")
-    
+
     info_rel = Relationship(
         source_id=weather_service.id,
         target_id=farmers.id,
@@ -1714,24 +1715,24 @@ fundamentally
         description="Weather forecast provision"
     )
     ```
-    
+
     ### Social and Collaborative Relationships
     ```python
     # Multi-stakeholder collaboration
     ngo = Actor(label="Environmental NGO", sector="Non-profit")
     industry_group = Actor(label="Industry Association", sector="Private")
-    
+
     collab_rel = Relationship(
         source_id=ngo.id,
         target_id=industry_group.id,
         kind=RelationshipKind.COLLABORATES_WITH,
         description="Sustainability initiative partnership"
     )
-    
+
     # Advocacy relationships
     consumer_group = Actor(label="Consumer Advocacy Group", sector="Non-profit")
     renewable_energy = Policy(label="Renewable Energy Policy", authority="State")
-    
+
     advocacy_rel = Relationship(
         source_id=consumer_group.id,
         target_id=renewable_energy.id,
@@ -1739,38 +1740,38 @@ fundamentally
         description="Policy support campaign"
     )
     ```
-    
+
     ## Complex Relationship Networks
-    
+
     ### Multi-Actor Policy Networks
     ```python
     # Create network of relationships around policy issue
     federal_agency = Actor(label="Federal Environmental Agency")
-    state_agency = Actor(label="State Environmental Department") 
+    state_agency = Actor(label="State Environmental Department")
     local_government = Actor(label="City Council")
     industry = Actor(label="Manufacturing Industry")
     citizens = Actor(label="Local Citizens")
-    
+
     # Hierarchical governance relationships
     mandate_rel = Relationship(
         source_id=federal_agency.id,
         target_id=state_agency.id,
         kind=RelationshipKind.MANDATES
     )
-    
+
     delegate_rel = Relationship(
         source_id=state_agency.id,
         target_id=local_government.id,
         kind=RelationshipKind.DELEGATES
     )
-    
+
     # Regulatory relationships
     regulate_rel = Relationship(
         source_id=local_government.id,
         target_id=industry.id,
         kind=RelationshipKind.REGULATES
     )
-    
+
     # Accountability relationships
     account_rel = Relationship(
         source_id=local_government.id,
@@ -1778,26 +1779,26 @@ fundamentally
         kind=RelationshipKind.ACCOUNTABLE_TO
     )
     ```
-    
+
     ## Relationship Direction and Symmetry
-    
+
     Most relationships in SFM are **directional**, indicating flow or influence from
     source to target:
-    
+
     - **GOVERNS**: Authority flows from government to governed entity
     - **SUPPLIES**: Resources flow from supplier to recipient
     - **INFLUENCES**: Impact flows from influencer to influenced
-    
+
     Some relationships can be **bidirectional** or **symmetric**:
-    
+
     - **COLLABORATES_WITH**: Mutual cooperation
     - **EXCHANGES_WITH**: Mutual exchange
     - **COMPETES_WITH**: Mutual rivalry
-    
+
     ## Integration with Flow Analysis
-    
+
     Relationships often involve specific flows that can be tracked:
-    
+
     ```python
     # Relationship with associated flows
     payment_flow = Flow(
@@ -1805,7 +1806,7 @@ fundamentally
         nature=FlowNature.FINANCIAL,
         flow_type=FlowType.FINANCIAL
     )
-    
+
     service_rel = Relationship(
         source_id=client.id,
         target_id=service_provider.id,
@@ -1813,20 +1814,20 @@ fundamentally
         flows=[payment_flow.id]  # Link specific flows to relationship
     )
     ```
-    
+
     ## Hayden-Specific Institutional Relationships
-    
+
     The taxonomy includes relationships particularly relevant to Hayden's analysis:
-    
+
     - **REINFORCES/UNDERMINES**: Feedback relationships for institutional stability
     - **TRANSFORMS**: Fundamental institutional change relationships
     - **ENABLES/CONSTRAINS**: Capacity and limitation relationships
     - **LEGITIMIZES**: Authority and acceptance relationships
-    
+
     ## Validation and Compatibility
-    
+
     RelationshipKind works with validation systems to ensure logical consistency:
-    
+
     ```python
     # Valid government-to-institution relationship
     governs_rel = Relationship(
@@ -1834,12 +1835,12 @@ fundamentally
         target_id=regulated_institution.id,
         kind=RelationshipKind.GOVERNS  # Appropriate for this actor-institution pairing
     )
-    
+
     # Validation will check compatibility of relationship type with actor types
     ```
-    
+
     ## References
-    
+
     - Hayden, F.G. (2006). "Policymaking for a Good Society", Chapter 7:
   Institutional Relationships
     - Hayden, F.G. (1982). "Social Fabric Matrix: From Perspective to Analytical Tool"
@@ -2043,7 +2044,8 @@ fundamentally
         """
         # Mapping of relationship types to their ceremonial tendency
         ceremonial_tendencies = {
-            # Highly ceremonial relationships (0.8-1.0) - status, tradition, hierarchy
+            # Highly ceremonial relationships (0.8-1.0) - status, tradition,
+            # hierarchy
             RelationshipKind.CEREMONIALLY_REINFORCES: 0.95,
             RelationshipKind.LEGITIMIZES: 0.85,
             RelationshipKind.GOVERNS: 0.75,
@@ -2069,7 +2071,8 @@ fundamentally
             RelationshipKind.ACCEPTS: 0.55,
             RelationshipKind.INTERPRETS: 0.50,
 
-            # Moderately instrumental (0.2-0.5) - some adaptation with structure
+            # Moderately instrumental (0.2-0.5) - some adaptation with
+            # structure
             RelationshipKind.ADVISES: 0.45,
             RelationshipKind.EDUCATES: 0.40,
             RelationshipKind.INFORMS: 0.35,
@@ -2082,7 +2085,8 @@ fundamentally
             RelationshipKind.EVOLVES_WITH: 0.40,
             RelationshipKind.ADAPTS_TO: 0.35,
 
-            # Highly instrumental (0.0-0.2) - problem-solving, adaptive, productive
+            # Highly instrumental (0.0-0.2) - problem-solving, adaptive,
+            # productive
             RelationshipKind.INSTRUMENTALLY_ADAPTS: 0.05,
             RelationshipKind.PRODUCES: 0.15,
             RelationshipKind.PROCESSES: 0.10,
@@ -2109,7 +2113,8 @@ fundamentally
             RelationshipKind.DISTRIBUTES: 0.40,
         }
 
-        # Return the mapped value, or default to moderate (0.5) if not explicitly mapped
+        # Return the mapped value, or default to moderate (0.5) if not
+        # explicitly mapped
         return ceremonial_tendencies.get(self, 0.5)
 
 
@@ -2200,7 +2205,7 @@ class TechnologyReadinessLevel(Enum):
     LABORATORY_VALIDATION = 4   # Component validation in laboratory
     RELEVANT_ENVIRONMENT = 5    # Component validation in relevant env
     DEMONSTRATION = 6           # System demonstration in relevant env
-    PROTOTYPE_DEMONSTRATION = 7 # Prototype demo in operational env
+    PROTOTYPE_DEMONSTRATION = 7  # Prototype demo in operational env
     SYSTEM_COMPLETE = 8         # System completed and qualified
     ACTUAL_SYSTEM = 9          # System proven through successful missions
 
@@ -2251,30 +2256,39 @@ class EnumValidator:
     RESOURCE_TYPES = {'Resource'}
     PROCESS_TYPES = {'Process', 'Flow'}
     SYSTEM_TYPES = {'TechnologySystem', 'BeliefSystem', 'ValueSystem'}
-    OTHER_TYPES = {'FeedbackLoop', 'Indicator', 'AnalyticalContext', 'SystemProperty',
-                   'CeremonialBehavior', 'InstrumentalBehavior', 'PolicyInstrument'}
+    OTHER_TYPES = {
+        'FeedbackLoop',
+        'Indicator',
+        'AnalyticalContext',
+        'SystemProperty',
+        'CeremonialBehavior',
+        'InstrumentalBehavior',
+        'PolicyInstrument'}
 
     # Define relationship context rules
     RELATIONSHIP_RULES: Dict[RelationshipKind, Dict[str, Union[List[Tuple[str, str]], str]]] = {
-       RelationshipKind.GOVERNS: {
+        RelationshipKind.GOVERNS: {
             'valid_combinations': [
                 ('Actor', 'Actor'),
                 ('Actor', 'Institution'),
                 ('Actor', 'Policy'),
-                ('Actor', 'Resource'),  # Actors can govern resources (ownership, stewardship)
+                # Actors can govern resources (ownership, stewardship)
+                ('Actor', 'Resource'),
                 ('Institution', 'Institution'),
                 ('Institution', 'Actor'),
                 ('Institution', 'Policy'),  # Institutions can govern policies
-                ('Institution', 'Resource'),  # Institutions can govern/regulate resources
+                # Institutions can govern/regulate resources
+                ('Institution', 'Resource'),
                 ('Policy', 'Actor'),
                 ('Policy', 'Institution'),
-                ('Policy', 'Resource')  # Policies can govern resources (regulations)
+                # Policies can govern resources (regulations)
+                ('Policy', 'Resource')
             ],
             'description': ('GOVERNS relationship requires entities capable of '
-                           'authority or regulation'),
+                            'authority or regulation'),
             'invalid_message': ('GOVERNS relationship requires authority-capable '
-                               'entities (Actors, Institutions, Policies) '
-                               'governing appropriate targets')
+                                'entities (Actors, Institutions, Policies) '
+                                'governing appropriate targets')
         },
         RelationshipKind.EMPLOYS: {
             'valid_combinations': [
@@ -2283,7 +2297,7 @@ class EnumValidator:
             ],
             'description': 'EMPLOYS relationship for labor relationships',
             'invalid_message': ('EMPLOYS relationship requires Actor or Institution '
-                               'employing Actor entities')
+                                'employing Actor entities')
         },
         RelationshipKind.OWNS: {
             'valid_combinations': [
@@ -2293,9 +2307,9 @@ class EnumValidator:
                 ('Institution', 'TechnologySystem')
             ],
             'description': ('OWNS relationship requires an entity capable of ownership '
-                           'and an ownable resource'),
+                            'and an ownable resource'),
             'invalid_message': ('OWNS relationship requires Actor/Institution '
-                               'owning Resource/TechnologySystem')
+                                'owning Resource/TechnologySystem')
         },
         RelationshipKind.USES: {
             'valid_combinations': [
@@ -2308,7 +2322,7 @@ class EnumValidator:
             ],
             'description': 'USES relationship requires a user and a usable entity',
             'invalid_message': ('USES relationship requires Actor/Process using '
-                               'Resource/TechnologySystem/Institution')
+                                'Resource/TechnologySystem/Institution')
         },
         RelationshipKind.PRODUCES: {
             'valid_combinations': [
@@ -2327,10 +2341,10 @@ class EnumValidator:
             ],
             'description': 'PRODUCES relationship requires a producer and a producible output',
             'invalid_message': ('PRODUCES relationship requires '
-                               'Actor/Process/TechnologySystem/PolicyInstrument '
-                               'producing Resource/Flow/ValueFlow')
+                                'Actor/Process/TechnologySystem/PolicyInstrument '
+                                'producing Resource/Flow/ValueFlow')
         },
-        
+
         # Enhanced governance relationships
         RelationshipKind.REGULATES: {
             'valid_combinations': [
@@ -2349,9 +2363,9 @@ class EnumValidator:
             ],
             'description': 'REGULATES relationship requires regulatory authority',
             'invalid_message': ('REGULATES relationship requires authority entities '
-                               '(Actor/Institution/Policy) regulating appropriate targets')
+                                '(Actor/Institution/Policy) regulating appropriate targets')
         },
-        
+
         RelationshipKind.INFLUENCES: {
             'valid_combinations': [
                 ('Actor', 'Actor'),
@@ -2361,8 +2375,10 @@ class EnumValidator:
                 ('Institution', 'Institution'),
                 ('Institution', 'Policy'),
                 ('Policy', 'Actor'),     # Policies can influence actors
-                ('Policy', 'Institution'),  # Policies can influence institutions
-                ('Policy', 'Resource'),  # Policies can influence resource management/usage
+                # Policies can influence institutions
+                ('Policy', 'Institution'),
+                # Policies can influence resource management/usage
+                ('Policy', 'Resource'),
                 ('Resource', 'Actor'),
                 ('Resource', 'Institution'),
                 ('Flow', 'Actor'),
@@ -2370,26 +2386,34 @@ class EnumValidator:
                 ('TechnologySystem', 'Actor'),
                 ('TechnologySystem', 'Institution'),
                 ('TechnologySystem', 'Policy'),
-                ('Actor', 'InstrumentalBehavior'),  # Actors can influence behaviors
-                ('Actor', 'CeremonialBehavior'),   # Actors can influence behaviors
-                ('Institution', 'InstrumentalBehavior'),  # Institutions can influence behaviors
-                ('Institution', 'CeremonialBehavior'),    # Institutions can influence behaviors
-                ('PolicyInstrument', 'InstrumentalBehavior'),  # Policy instruments can influence behaviors
-                ('PolicyInstrument', 'CeremonialBehavior')     # Policy instruments can influence behaviors
+                # Actors can influence behaviors
+                ('Actor', 'InstrumentalBehavior'),
+                # Actors can influence behaviors
+                ('Actor', 'CeremonialBehavior'),
+                # Institutions can influence behaviors
+                ('Institution', 'InstrumentalBehavior'),
+                # Institutions can influence behaviors
+                ('Institution', 'CeremonialBehavior'),
+                # Policy instruments can influence behaviors
+                ('PolicyInstrument', 'InstrumentalBehavior'),
+                # Policy instruments can influence behaviors
+                ('PolicyInstrument', 'CeremonialBehavior')
             ],
             'description': 'INFLUENCES relationship for impact and effect patterns',
             'invalid_message': ('INFLUENCES relationship requires influence-capable entities '
-                               'affecting decision-makers or systems')
+                                'affecting decision-makers or systems')
         },
-        
+
         RelationshipKind.FUNDS: {
             'valid_combinations': [
                 ('Actor', 'Actor'),
                 ('Institution', 'Actor'),
                 ('Actor', 'Institution'),
                 ('Institution', 'Institution'),
-                ('Policy', 'Actor'),        # Policies can establish funding for actors
-                ('Policy', 'Institution'),  # Policies can establish funding for institutions
+                # Policies can establish funding for actors
+                ('Policy', 'Actor'),
+                # Policies can establish funding for institutions
+                ('Policy', 'Institution'),
                 ('Actor', 'Resource'),
                 ('Institution', 'Resource'),
                 ('Actor', 'Process'),
@@ -2399,9 +2423,9 @@ class EnumValidator:
             ],
             'description': 'FUNDS relationship for financial resource provision',
             'invalid_message': ('FUNDS relationship requires funding entities '
-                               '(Actor/Institution/Policy) providing financial resources')
+                                '(Actor/Institution/Policy) providing financial resources')
         },
-        
+
         RelationshipKind.SUPPLIES: {
             'valid_combinations': [
                 ('Actor', 'Actor'),
@@ -2419,9 +2443,9 @@ class EnumValidator:
             ],
             'description': 'SUPPLIES relationship for resource provision',
             'invalid_message': ('SUPPLIES relationship requires suppliers providing '
-                               'resources to recipients')
+                                'resources to recipients')
         },
-        
+
         RelationshipKind.IMPLEMENTS: {
             'valid_combinations': [
                 ('Actor', 'Policy'),
@@ -2431,13 +2455,14 @@ class EnumValidator:
                 ('Process', 'Policy'),
                 ('TechnologySystem', 'Policy'),
                 ('PolicyInstrument', 'Policy'),
-                ('Policy', 'PolicyInstrument')  # Policies implement through policy instruments
+                # Policies implement through policy instruments
+                ('Policy', 'PolicyInstrument')
             ],
             'description': 'IMPLEMENTS relationship for policy and institutional execution',
             'invalid_message': ('IMPLEMENTS relationship requires implementing entities '
-                               'executing policies or institutional arrangements')
+                                'executing policies or institutional arrangements')
         },
-        
+
         RelationshipKind.TRANSFORMS: {
             'valid_combinations': [
                 ('Process', 'Resource'),
@@ -2455,9 +2480,9 @@ class EnumValidator:
             ],
             'description': 'TRANSFORMS relationship for change and conversion processes',
             'invalid_message': ('TRANSFORMS relationship requires active change agents '
-                               '(Process/TechnologySystem/PolicyInstrument) transforming targets')
+                                '(Process/TechnologySystem/PolicyInstrument) transforming targets')
         },
-        
+
         RelationshipKind.COLLABORATES_WITH: {
             'valid_combinations': [
                 ('Actor', 'Actor'),
@@ -2470,9 +2495,9 @@ class EnumValidator:
             ],
             'description': 'COLLABORATES_WITH relationship for cooperative arrangements',
             'invalid_message': ('COLLABORATES_WITH relationship requires cooperative entities '
-                               'working together')
+                                'working together')
         },
-        
+
         RelationshipKind.COORDINATES_WITH: {
             'valid_combinations': [
                 ('Actor', 'Actor'),
@@ -2487,7 +2512,7 @@ class EnumValidator:
             ],
             'description': 'COORDINATES_WITH relationship for alignment and synchronization',
             'invalid_message': ('COORDINATES_WITH relationship requires coordinating entities '
-                               'aligning activities')
+                                'aligning activities')
         }
     }
 
@@ -2518,9 +2543,14 @@ class EnumValidator:
         if kind in EnumValidator.RELATIONSHIP_RULES:
             rule = EnumValidator.RELATIONSHIP_RULES[kind]
             valid_combinations = rule['valid_combinations']
-            
-            if isinstance(valid_combinations, str) or (source_type, target_type) not in valid_combinations:
-                suggestions = EnumValidator._generate_suggestions(kind, source_type, target_type)
+
+            if isinstance(
+                    valid_combinations,
+                    str) or (
+                    source_type,
+                    target_type) not in valid_combinations:
+                suggestions = EnumValidator._generate_suggestions(
+                    kind, source_type, target_type)
                 raise IncompatibleEnumError(
                     f"{rule['invalid_message']}. "
                     f"Got {source_type}->{target_type}. "
@@ -2528,7 +2558,9 @@ class EnumValidator:
                 )
 
     @staticmethod
-    def validate_flow_combination(nature: FlowNature, flow_type: FlowType) -> None:
+    def validate_flow_combination(
+            nature: FlowNature,
+            flow_type: FlowType) -> None:
         """Validate that flow nature and type are compatible.
 
         Args:
@@ -2571,9 +2603,9 @@ class EnumValidator:
 
         if (nature, flow_type) in strictly_incompatible:
             raise IncompatibleEnumError(
-                f"Flow nature {nature.name} is semantically incompatible with "
-                f"flow type {flow_type.name}. Consider using compatible combinations."
-            )
+                f"Flow nature {
+                    nature.name} is semantically incompatible with " f"flow type {
+                    flow_type.name}. Consider using compatible combinations.")
 
     @staticmethod
     def validate_institution_layer_context(
@@ -2593,7 +2625,7 @@ class EnumValidator:
 
         # Formal rules should typically apply to formal institutions
         if (layer == InstitutionLayer.FORMAL_RULE and
-            institution_type in ['BeliefSystem', 'ValueSystem']):
+                institution_type in ['BeliefSystem', 'ValueSystem']):
             raise IncompatibleEnumError(
                 f"FORMAL_RULE layer is typically not appropriate for {institution_type}. "
                 f"Consider using CULTURAL_VALUE or KNOWLEDGE_SYSTEM layers for "
@@ -2630,7 +2662,8 @@ class EnumValidator:
             (PolicyInstrumentType.ECONOMIC, 'awareness_building'),
         }
 
-        if (instrument_type, target_context.lower()) in inappropriate_combinations:
+        if (instrument_type, target_context.lower()
+                ) in inappropriate_combinations:
             raise IncompatibleEnumError(
                 f"Policy instrument {instrument_type.name} may not be appropriate for "
                 f"{target_context} context. Consider alternative instrument types that "
@@ -2660,15 +2693,20 @@ class EnumValidator:
 
         # Define categories that are difficult to measure quantitatively
         qualitative_preferred = {
-            ValueCategory.CULTURAL, ValueCategory.SPIRITUAL, ValueCategory.AESTHETIC,
-            ValueCategory.ETHICAL, ValueCategory.PSYCHOLOGICAL, ValueCategory.COMMUNITY
-        }
+            ValueCategory.CULTURAL,
+            ValueCategory.SPIRITUAL,
+            ValueCategory.AESTHETIC,
+            ValueCategory.ETHICAL,
+            ValueCategory.PSYCHOLOGICAL,
+            ValueCategory.COMMUNITY}
 
         # Define categories that are typically quantitative
         quantitative_preferred = {
-            ValueCategory.ECONOMIC, ValueCategory.PERFORMANCE, ValueCategory.EFFICIENCY,
-            ValueCategory.EFFECTIVENESS, ValueCategory.DEMOGRAPHIC
-        }
+            ValueCategory.ECONOMIC,
+            ValueCategory.PERFORMANCE,
+            ValueCategory.EFFICIENCY,
+            ValueCategory.EFFECTIVENESS,
+            ValueCategory.DEMOGRAPHIC}
 
         context_lower = measurement_context.lower()
 
@@ -2710,19 +2748,20 @@ class EnumValidator:
         # Handle flow nature and institution layer dependencies
         if (isinstance(primary_enum, FlowNature) and
             isinstance(dependent_enum, InstitutionLayer) and
-            relationship_type.lower() == 'governance'):
+                relationship_type.lower() == 'governance'):
 
-            # Financial flows should typically be governed by formal institutions
+            # Financial flows should typically be governed by formal
+            # institutions
             if (primary_enum == FlowNature.FINANCIAL and
-                dependent_enum == InstitutionLayer.INFORMAL_NORM):
+                    dependent_enum == InstitutionLayer.INFORMAL_NORM):
                 raise IncompatibleEnumError(
-                    f"Financial flows ({primary_enum.name}) typically require formal institutional governance, "
-                    f"not {dependent_enum.name}. Consider FORMAL_RULE or ORGANIZATION layers."
-                )
+                    f"Financial flows ({
+                        primary_enum.name}) typically require formal institutional governance, " f"not {
+                        dependent_enum.name}. Consider FORMAL_RULE or ORGANIZATION layers.")
 
             # Cultural flows align better with cultural value layers
             if (primary_enum == FlowNature.CULTURAL and
-                dependent_enum == InstitutionLayer.FORMAL_RULE):
+                    dependent_enum == InstitutionLayer.FORMAL_RULE):
                 raise IncompatibleEnumError(
                     f"Cultural flows ({primary_enum.name}) may be over-regulated by {dependent_enum.name}. "
                     f"Consider CULTURAL_VALUE or INFORMAL_NORM layers."
@@ -2834,17 +2873,18 @@ class EnumValidator:
 
         context_lower = institutional_context.lower()
 
-        # Traditional legitimacy rarely appropriate for modern bureaucratic contexts
+        # Traditional legitimacy rarely appropriate for modern bureaucratic
+        # contexts
         if source == LegitimacySource.TRADITIONAL and context_lower in [
-            'bureaucracy', 'modern_government', 'corporation', 'scientific_institution'
-        ]:
+                'bureaucracy', 'modern_government', 'corporation', 'scientific_institution']:
             raise IncompatibleEnumError(
                 f"Traditional legitimacy may not be appropriate for "
                 f"{institutional_context}. Consider LEGAL_RATIONAL or EXPERT "
                 f"legitimacy sources."
             )
 
-        # Charismatic legitimacy typically unstable for large-scale institutions
+        # Charismatic legitimacy typically unstable for large-scale
+        # institutions
         if source == LegitimacySource.CHARISMATIC and context_lower in [
             'large_organization', 'government_agency', 'public_administration'
         ]:
@@ -2856,16 +2896,18 @@ class EnumValidator:
 
         # Expert legitimacy most appropriate for technical/scientific contexts
         if source != LegitimacySource.EXPERT and context_lower in [
-            'technical_organization', 'research_institution', 'professional_body'
-        ]:
+                'technical_organization', 'research_institution', 'professional_body']:
             # This is a warning rather than error - other sources can exist
             # but expert is preferred
             pass
 
     @staticmethod
-    def _generate_suggestions(kind: RelationshipKind, source_type: str, target_type: str) -> str:
+    def _generate_suggestions(
+            kind: RelationshipKind,
+            source_type: str,
+            target_type: str) -> str:
         """Generate intelligent, context-aware suggestions for valid combinations.
-        
+
         Enhanced suggestion algorithm that provides:
         - Semantic analysis of relationship types
         - Entity type compatibility assessment
@@ -2873,155 +2915,233 @@ class EnumValidator:
         - SFM-specific business logic guidance
         """
         suggestions: List[str] = []
-        
+
         # Try specific rules first for basic suggestions
         if kind in EnumValidator.RELATIONSHIP_RULES:
             valid_combinations = EnumValidator.RELATIONSHIP_RULES[kind]['valid_combinations']
 
             # Find suggestions for the source type
-            source_suggestions = [combo[1] for combo in valid_combinations if combo[0] == source_type]
-            target_suggestions = [combo[0] for combo in valid_combinations if combo[1] == target_type]
+            source_suggestions = [
+                combo[1] for combo in valid_combinations if combo[0] == source_type]
+            target_suggestions = [
+                combo[0] for combo in valid_combinations if combo[1] == target_type]
 
             if source_suggestions:
-                suggestions.append(f"For {source_type} sources, valid targets are: {', '.join(set(source_suggestions))}")
+                suggestions.append(
+                    f"For {source_type} sources, valid targets are: {
+                        ', '.join(
+                            set(source_suggestions))}")
             if target_suggestions:
-                suggestions.append(f"For {target_type} targets, valid sources are: {', '.join(set(target_suggestions))}")
-        
+                suggestions.append(
+                    f"For {target_type} targets, valid sources are: {
+                        ', '.join(
+                            set(target_suggestions))}")
+
         # Always enhance with intelligent suggestion algorithms
-        semantic_suggestions = EnumValidator._generate_semantic_suggestions(kind, source_type, target_type)
+        semantic_suggestions = EnumValidator._generate_semantic_suggestions(
+            kind, source_type, target_type)
         if semantic_suggestions:
             suggestions.extend(semantic_suggestions)
-        
+
         # Business logic suggestions based on SFM principles
-        business_suggestions = EnumValidator._generate_business_logic_suggestions(kind, source_type, target_type)
+        business_suggestions = EnumValidator._generate_business_logic_suggestions(
+            kind, source_type, target_type)
         if business_suggestions:
             suggestions.extend(business_suggestions)
-        
+
         # Context-aware entity compatibility suggestions
-        entity_suggestions = EnumValidator._generate_entity_compatibility_suggestions(source_type, target_type)
+        entity_suggestions = EnumValidator._generate_entity_compatibility_suggestions(
+            source_type, target_type)
         if entity_suggestions:
             suggestions.extend(entity_suggestions)
-        
+
         if suggestions:
             return "Suggestions: " + "; ".join(suggestions)
-        
+
         return "Check the relationship documentation for valid combinations."
 
-    @staticmethod 
-    def _generate_semantic_suggestions(kind: RelationshipKind, source_type: str, target_type: str) -> List[str]:
+    @staticmethod
+    def _generate_semantic_suggestions(
+            kind: RelationshipKind,
+            source_type: str,
+            target_type: str) -> List[str]:
         """Generate suggestions based on semantic analysis of relationship types."""
         suggestions = []
-        
+
         # Categorize relationships by semantic meaning
         governance_relations = {
-            RelationshipKind.GOVERNS, RelationshipKind.REGULATES, RelationshipKind.MANDATES,
-            RelationshipKind.AUTHORIZES, RelationshipKind.ENFORCES, RelationshipKind.DELEGATES,
-            RelationshipKind.LICENSES, RelationshipKind.CERTIFIES, RelationshipKind.SANCTIONS
-        }
-        
+            RelationshipKind.GOVERNS,
+            RelationshipKind.REGULATES,
+            RelationshipKind.MANDATES,
+            RelationshipKind.AUTHORIZES,
+            RelationshipKind.ENFORCES,
+            RelationshipKind.DELEGATES,
+            RelationshipKind.LICENSES,
+            RelationshipKind.CERTIFIES,
+            RelationshipKind.SANCTIONS}
+
         resource_flow_relations = {
-            RelationshipKind.FUNDS, RelationshipKind.PAYS, RelationshipKind.ALLOCATES,
-            RelationshipKind.TRANSFERS, RelationshipKind.SUPPLIES, RelationshipKind.PRODUCES,
-            RelationshipKind.DISTRIBUTES, RelationshipKind.CONVERTS, RelationshipKind.EXCHANGES_WITH
-        }
-        
+            RelationshipKind.FUNDS,
+            RelationshipKind.PAYS,
+            RelationshipKind.ALLOCATES,
+            RelationshipKind.TRANSFERS,
+            RelationshipKind.SUPPLIES,
+            RelationshipKind.PRODUCES,
+            RelationshipKind.DISTRIBUTES,
+            RelationshipKind.CONVERTS,
+            RelationshipKind.EXCHANGES_WITH}
+
         knowledge_relations = {
-            RelationshipKind.INFORMS, RelationshipKind.EDUCATES, RelationshipKind.ADVISES,
-            RelationshipKind.RESEARCHES, RelationshipKind.ANALYZES, RelationshipKind.COMMUNICATES_WITH,
-            RelationshipKind.DOCUMENTS, RelationshipKind.MEASURES
-        }
-        
+            RelationshipKind.INFORMS,
+            RelationshipKind.EDUCATES,
+            RelationshipKind.ADVISES,
+            RelationshipKind.RESEARCHES,
+            RelationshipKind.ANALYZES,
+            RelationshipKind.COMMUNICATES_WITH,
+            RelationshipKind.DOCUMENTS,
+            RelationshipKind.MEASURES}
+
         collaborative_relations = {
-            RelationshipKind.COLLABORATES_WITH, RelationshipKind.COORDINATES_WITH,
-            RelationshipKind.SUPPORTS, RelationshipKind.ALLIES_WITH, RelationshipKind.FACILITATES,
-            RelationshipKind.PARTICIPATES_IN, RelationshipKind.ORGANIZES
-        }
-        
+            RelationshipKind.COLLABORATES_WITH,
+            RelationshipKind.COORDINATES_WITH,
+            RelationshipKind.SUPPORTS,
+            RelationshipKind.ALLIES_WITH,
+            RelationshipKind.FACILITATES,
+            RelationshipKind.PARTICIPATES_IN,
+            RelationshipKind.ORGANIZES}
+
         # Provide semantic category guidance
         if kind in governance_relations:
             if source_type not in ['Actor', 'Institution', 'Policy']:
-                suggestions.append(f"Governance relationships like {kind.name} typically require Actor, Institution, or Policy as source")
+                suggestions.append(
+                    f"Governance relationships like {
+                        kind.name} typically require Actor, Institution, or Policy as source")
             if target_type in ['Actor', 'Institution', 'Policy', 'Resource']:
-                suggestions.append(f"Consider {kind.name} with governable entities: Actor, Institution, Policy, or Resource")
-                
+                suggestions.append(
+                    f"Consider {
+                        kind.name} with governable entities: Actor, Institution, Policy, or Resource")
+
         elif kind in resource_flow_relations:
-            if source_type not in ['Actor', 'Institution', 'Process', 'PolicyInstrument']:
-                suggestions.append(f"Resource flow relationships like {kind.name} typically require entities capable of resource handling")
+            if source_type not in [
+                'Actor',
+                'Institution',
+                'Process',
+                    'PolicyInstrument']:
+                suggestions.append(
+                    f"Resource flow relationships like {
+                        kind.name} typically require entities capable of resource handling")
             if target_type not in ['Actor', 'Resource', 'Flow', 'ValueFlow']:
-                suggestions.append(f"Consider {kind.name} targeting resource-receiving entities: Actor, Resource, Flow, or ValueFlow")
-                
+                suggestions.append(
+                    f"Consider {
+                        kind.name} targeting resource-receiving entities: Actor, Resource, Flow, or ValueFlow")
+
         elif kind in knowledge_relations:
             if source_type not in ['Actor', 'Institution', 'TechnologySystem']:
-                suggestions.append(f"Knowledge relationships like {kind.name} typically require information-capable entities")
-            if target_type not in ['Actor', 'Institution', 'Resource', 'TechnologySystem']:
-                suggestions.append(f"Consider {kind.name} with information-receiving entities")
-                
+                suggestions.append(
+                    f"Knowledge relationships like {
+                        kind.name} typically require information-capable entities")
+            if target_type not in [
+                'Actor',
+                'Institution',
+                'Resource',
+                    'TechnologySystem']:
+                suggestions.append(
+                    f"Consider {
+                        kind.name} with information-receiving entities")
+
         elif kind in collaborative_relations:
             if source_type not in ['Actor', 'Institution']:
-                suggestions.append(f"Collaborative relationships like {kind.name} typically require social entities like Actor or Institution")
+                suggestions.append(
+                    f"Collaborative relationships like {
+                        kind.name} typically require social entities like Actor or Institution")
             if target_type not in ['Actor', 'Institution', 'Process']:
-                suggestions.append(f"Consider {kind.name} with collaborative entities: Actor, Institution, or Process")
-        
+                suggestions.append(
+                    f"Consider {
+                        kind.name} with collaborative entities: Actor, Institution, or Process")
+
         return suggestions
 
     @staticmethod
-    def _generate_business_logic_suggestions(kind: RelationshipKind, source_type: str, target_type: str) -> List[str]:
+    def _generate_business_logic_suggestions(
+            kind: RelationshipKind,
+            source_type: str,
+            target_type: str) -> List[str]:
         """Generate suggestions based on SFM business logic and domain constraints."""
         suggestions = []
-        
+
         # SFM-specific institutional analysis patterns
         if kind == RelationshipKind.IMPLEMENTS and source_type == 'Actor':
             if target_type not in ['Policy', 'Institution']:
-                suggestions.append("Actors typically implement Policies or institutional arrangements")
-                
+                suggestions.append(
+                    "Actors typically implement Policies or institutional arrangements")
+
         elif kind == RelationshipKind.INFLUENCES:
-            if source_type in ['Resource', 'Flow'] and target_type in ['Actor', 'Institution']:
-                suggestions.append("Resources and Flows can influence decision-making entities")
+            if source_type in [
+                    'Resource',
+                    'Flow'] and target_type in [
+                    'Actor',
+                    'Institution']:
+                suggestions.append(
+                    "Resources and Flows can influence decision-making entities")
             elif source_type in ['Actor', 'Institution'] and target_type in ['Actor', 'Institution', 'Policy']:
-                suggestions.append("Social entities can influence other social entities and policies")
-                
+                suggestions.append(
+                    "Social entities can influence other social entities and policies")
+
         elif kind == RelationshipKind.TRANSFORMS:
-            if source_type not in ['Process', 'TechnologySystem', 'PolicyInstrument']:
-                suggestions.append("Transformation typically requires active change agents: Process, TechnologySystem, or PolicyInstrument")
+            if source_type not in [
+                'Process',
+                'TechnologySystem',
+                    'PolicyInstrument']:
+                suggestions.append(
+                    "Transformation typically requires active change agents: Process, TechnologySystem, or PolicyInstrument")
             if target_type not in ['Resource', 'Flow', 'ValueFlow', 'Actor']:
-                suggestions.append("Consider transformation targets: Resource, Flow, ValueFlow, or Actor")
-                
+                suggestions.append(
+                    "Consider transformation targets: Resource, Flow, ValueFlow, or Actor")
+
         # Hayden's institutional layer compatibility
         elif kind in [RelationshipKind.ENFORCES, RelationshipKind.SANCTIONS]:
             if source_type != 'Institution':
-                suggestions.append("Enforcement and sanctions typically come from institutional authority")
-                
+                suggestions.append(
+                    "Enforcement and sanctions typically come from institutional authority")
+
         # Economic flow patterns
         elif kind in [RelationshipKind.BUYS_FROM, RelationshipKind.SELLS_TO, RelationshipKind.PAYS]:
             if source_type not in ['Actor', 'Institution']:
-                suggestions.append("Economic transactions require economic actors")
+                suggestions.append(
+                    "Economic transactions require economic actors")
             if target_type not in ['Actor', 'Institution']:
-                suggestions.append("Economic transactions target other economic actors")
-        
+                suggestions.append(
+                    "Economic transactions target other economic actors")
+
         return suggestions
 
-    @staticmethod 
-    def _generate_entity_compatibility_suggestions(source_type: str, target_type: str) -> List[str]:
+    @staticmethod
+    def _generate_entity_compatibility_suggestions(
+            source_type: str, target_type: str) -> List[str]:
         """Generate suggestions based on entity type compatibility in SFM framework."""
         suggestions = []
-        
+
         # Get entity type categories for analysis
         source_category = EnumValidator._get_entity_category(source_type)
         target_category = EnumValidator._get_entity_category(target_type)
-        
+
         # Suggest compatible entity combinations
         if source_category == 'social' and target_category == 'structural':
-            suggestions.append("Social entities (Actor, Institution) work well with structural entities (Resource, TechnologySystem)")
-            
+            suggestions.append(
+                "Social entities (Actor, Institution) work well with structural entities (Resource, TechnologySystem)")
+
         elif source_category == 'active' and target_category == 'passive':
-            suggestions.append("Active entities (Actor, Process) can effectively operate on passive entities (Resource, Flow)")
-            
+            suggestions.append(
+                "Active entities (Actor, Process) can effectively operate on passive entities (Resource, Flow)")
+
         elif source_category == 'authority' and target_category in ['social', 'structural']:
-            suggestions.append("Authority entities (Institution, Policy) can govern social and structural entities")
-            
+            suggestions.append(
+                "Authority entities (Institution, Policy) can govern social and structural entities")
+
         elif source_type == target_type:
-            suggestions.append(f"Same-type relationships ({source_type}->{target_type}) may indicate peer interaction patterns")
-        
+            suggestions.append(
+                f"Same-type relationships ({source_type}->{target_type}) may indicate peer interaction patterns")
+
         return suggestions
 
     @staticmethod
@@ -3042,23 +3162,23 @@ class EnumValidator:
 
     @staticmethod
     def validate_cross_entity_consistency(
-        entity_1_type: str, 
-        entity_2_type: str, 
+        entity_1_type: str,
+        entity_2_type: str,
         relationship_kind: RelationshipKind,
         context: str = "general"
     ) -> None:
         """Validate consistency across multiple entities in SFM framework.
-        
+
         This method implements advanced cross-entity validation rules that ensure
         entities work together coherently within the SFM framework, considering
         business logic and domain constraints.
-        
+
         Args:
             entity_1_type: Type of first entity
-            entity_2_type: Type of second entity  
+            entity_2_type: Type of second entity
             relationship_kind: The relationship connecting them
             context: Additional context for validation
-            
+
         Raises:
             IncompatibleEnumError: If entities are inconsistent
             InvalidEnumOperationError: If invalid parameters provided
@@ -3067,31 +3187,42 @@ class EnumValidator:
             raise InvalidEnumOperationError(
                 "Entity types must be provided and non-empty"
             )
-        
+
         # Basic relationship validation first
-        EnumValidator.validate_relationship_context(relationship_kind, entity_1_type, entity_2_type)
-        
+        EnumValidator.validate_relationship_context(
+            relationship_kind, entity_1_type, entity_2_type)
+
         # Advanced consistency checks based on SFM principles
-        
-        # Authority consistency: governance relationships require clear authority hierarchy
+
+        # Authority consistency: governance relationships require clear
+        # authority hierarchy
         governance_relationships = {
-            RelationshipKind.GOVERNS, RelationshipKind.REGULATES, RelationshipKind.MANDATES,
-            RelationshipKind.AUTHORIZES, RelationshipKind.ENFORCES
-        }
-        
+            RelationshipKind.GOVERNS,
+            RelationshipKind.REGULATES,
+            RelationshipKind.MANDATES,
+            RelationshipKind.AUTHORIZES,
+            RelationshipKind.ENFORCES}
+
         if relationship_kind in governance_relationships:
-            if entity_1_type in ['Resource', 'Flow'] and entity_2_type in ['Actor', 'Institution']:
+            if entity_1_type in [
+                    'Resource',
+                    'Flow'] and entity_2_type in [
+                    'Actor',
+                    'Institution']:
                 raise IncompatibleEnumError(
                     f"Authority inconsistency: {entity_1_type} cannot exercise governance "
                     f"over {entity_2_type}. Governance requires authority-capable entities."
                 )
-        
-        # Economic consistency: financial relationships require economic capability
+
+        # Economic consistency: financial relationships require economic
+        # capability
         economic_relationships = {
-            RelationshipKind.FUNDS, RelationshipKind.PAYS, RelationshipKind.BUYS_FROM,
-            RelationshipKind.SELLS_TO, RelationshipKind.INVESTS_IN
-        }
-        
+            RelationshipKind.FUNDS,
+            RelationshipKind.PAYS,
+            RelationshipKind.BUYS_FROM,
+            RelationshipKind.SELLS_TO,
+            RelationshipKind.INVESTS_IN}
+
         if relationship_kind in economic_relationships:
             non_economic_entities = ['Flow', 'ValueFlow', 'Process']
             if entity_1_type in non_economic_entities or entity_2_type in non_economic_entities:
@@ -3100,29 +3231,40 @@ class EnumValidator:
                     f"between {entity_1_type} and {entity_2_type} requires economic actors. "
                     f"Consider Actor or Institution entities for economic transactions."
                 )
-        
+
         # Temporal consistency: ensure entity lifecycles are compatible
         if context.lower() in ['temporal', 'time_series']:
             temporal_sensitive = {
-                RelationshipKind.PRECEDES, RelationshipKind.FOLLOWS, RelationshipKind.TRIGGERS,
-                RelationshipKind.SYNCHRONIZES_WITH, RelationshipKind.SUPERSEDES
-            }
-            
+                RelationshipKind.PRECEDES,
+                RelationshipKind.FOLLOWS,
+                RelationshipKind.TRIGGERS,
+                RelationshipKind.SYNCHRONIZES_WITH,
+                RelationshipKind.SUPERSEDES}
+
             if relationship_kind in temporal_sensitive:
-                # Structural entities (Resources, Systems) may have different temporal patterns
-                if entity_1_type in ['Resource', 'TechnologySystem'] and entity_2_type in ['Actor']:
+                # Structural entities (Resources, Systems) may have different
+                # temporal patterns
+                if entity_1_type in [
+                    'Resource',
+                        'TechnologySystem'] and entity_2_type in ['Actor']:
                     # This is acceptable but requires careful temporal modeling
                     pass
-        
+
         # Spatial consistency: ensure entities can interact spatially
         if context.lower() in ['spatial', 'geographic']:
             spatial_relationships = {
-                RelationshipKind.LOCATED_IN, RelationshipKind.CONNECTS, RelationshipKind.TRANSPORTS,
-                RelationshipKind.CONTAINS, RelationshipKind.ENCOMPASSES
-            }
-            
+                RelationshipKind.LOCATED_IN,
+                RelationshipKind.CONNECTS,
+                RelationshipKind.TRANSPORTS,
+                RelationshipKind.CONTAINS,
+                RelationshipKind.ENCOMPASSES}
+
             if relationship_kind in spatial_relationships:
-                if entity_1_type in ['Flow', 'ValueFlow'] and entity_2_type in ['Flow', 'ValueFlow']:
+                if entity_1_type in [
+                        'Flow',
+                        'ValueFlow'] and entity_2_type in [
+                        'Flow',
+                        'ValueFlow']:
                     raise IncompatibleEnumError(
                         f"Spatial inconsistency: {relationship_kind.name} between flows "
                         f"may require spatial anchor entities (Actor, Institution, Resource)."
@@ -3136,16 +3278,16 @@ class EnumValidator:
         domain_context: str = "general"
     ) -> None:
         """Validate SFM-specific business rules and domain constraints.
-        
+
         This method implements domain-specific validation rules based on Hayden's
         institutional analysis framework and SFM methodology.
-        
+
         Args:
             relationship_kind: The relationship type to validate
             source_type: Source entity type
             target_type: Target entity type
             domain_context: Domain-specific context (e.g., 'environmental', 'economic')
-            
+
         Raises:
             IncompatibleEnumError: If business rules are violated
             InvalidEnumOperationError: If invalid parameters provided
@@ -3154,43 +3296,50 @@ class EnumValidator:
             raise InvalidEnumOperationError(
                 "All parameters must be provided and non-empty"
             )
-        
+
         domain_lower = domain_context.lower()
-        
+
         # Environmental domain constraints
         if domain_lower in ['environmental', 'sustainability', 'ecological']:
-            # Environmental policies should primarily regulate actors and resources
+            # Environmental policies should primarily regulate actors and
+            # resources
             if relationship_kind == RelationshipKind.REGULATES and source_type == 'Policy':
-                if target_type not in ['Actor', 'Resource', 'TechnologySystem']:
+                if target_type not in [
+                        'Actor', 'Resource', 'TechnologySystem']:
                     raise IncompatibleEnumError(
                         f"Environmental regulatory constraint: Policy should regulate "
                         f"entities with environmental impact (Actor/Resource/TechnologySystem), "
                         f"not {target_type}."
                     )
-            
+
             # Environmental flows should connect to resource or actor entities
-            if relationship_kind in [RelationshipKind.PRODUCES, RelationshipKind.CONSUMES]:
-                if source_type == 'Flow' and target_type not in ['Resource', 'Actor']:
+            if relationship_kind in [
+                    RelationshipKind.PRODUCES,
+                    RelationshipKind.CONSUMES]:
+                if source_type == 'Flow' and target_type not in [
+                        'Resource', 'Actor']:
                     raise IncompatibleEnumError(
                         f"Environmental flow constraint: {relationship_kind.name} from Flow "
                         f"should target Resource or Actor entities in environmental context."
                     )
-        
+
         # Economic domain constraints
         elif domain_lower in ['economic', 'financial', 'market']:
             # Market relationships require economic actors
             market_relationships = {
-                RelationshipKind.COMPETES_WITH, RelationshipKind.BUYS_FROM, 
+                RelationshipKind.COMPETES_WITH, RelationshipKind.BUYS_FROM,
                 RelationshipKind.SELLS_TO, RelationshipKind.CONTRACTS_WITH
             }
-            
+
             if relationship_kind in market_relationships:
-                if source_type not in ['Actor', 'Institution'] or target_type not in ['Actor', 'Institution']:
+                if source_type not in [
+                        'Actor', 'Institution'] or target_type not in [
+                        'Actor', 'Institution']:
                     raise IncompatibleEnumError(
                         f"Economic constraint: Market relationship {relationship_kind.name} "
                         f"requires economic actors (Actor/Institution), got {source_type}->{target_type}."
                     )
-            
+
             # Investment relationships require financial capability
             if relationship_kind == RelationshipKind.INVESTS_IN:
                 if source_type not in ['Actor', 'Institution']:
@@ -3198,32 +3347,34 @@ class EnumValidator:
                         f"Economic constraint: Investment requires Actor or Institution "
                         f"as investor, not {source_type}."
                     )
-        
-        # Social domain constraints  
+
+        # Social domain constraints
         elif domain_lower in ['social', 'community', 'governance']:
             # Social coordination requires social entities
             social_relationships = {
-                RelationshipKind.COLLABORATES_WITH, RelationshipKind.COORDINATES_WITH,
-                RelationshipKind.PARTICIPATES_IN, RelationshipKind.ORGANIZES
-            }
-            
+                RelationshipKind.COLLABORATES_WITH,
+                RelationshipKind.COORDINATES_WITH,
+                RelationshipKind.PARTICIPATES_IN,
+                RelationshipKind.ORGANIZES}
+
             if relationship_kind in social_relationships:
                 if source_type not in ['Actor', 'Institution']:
                     raise IncompatibleEnumError(
                         f"Social constraint: {relationship_kind.name} requires social entities "
                         f"(Actor/Institution) as participants, not {source_type}."
                     )
-        
+
         # Institutional domain constraints (Hayden's framework)
         elif domain_lower in ['institutional', 'policy', 'governance']:
             # Institutional implementation requires clear authority
             if relationship_kind == RelationshipKind.IMPLEMENTS:
-                if source_type not in ['Actor', 'Institution', 'PolicyInstrument']:
+                if source_type not in [
+                        'Actor', 'Institution', 'PolicyInstrument']:
                     raise IncompatibleEnumError(
                         f"Institutional constraint: Policy implementation requires "
                         f"implementing entities (Actor/Institution/PolicyInstrument), not {source_type}."
                     )
-                
+
                 if target_type not in ['Policy', 'Institution']:
                     raise IncompatibleEnumError(
                         f"Institutional constraint: Implementation should target "
@@ -3231,7 +3382,8 @@ class EnumValidator:
                     )
 
 
-def validate_enum_operation(operation_name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def validate_enum_operation(
+        operation_name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator to validate enum operations and provide better error messages.
 
     Args:

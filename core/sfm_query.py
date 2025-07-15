@@ -232,9 +232,11 @@ class SFMQueryEngine(ABC):  # pylint: disable=too-many-public-methods
     # ═══════════════════════════════════════════════════════════════════════════
 
     @abstractmethod
-    def analyze_flow_patterns(
-        self, flow_type: FlowNature, time_window: Optional[Tuple[datetime, datetime]] = None
-    ) -> Dict[str, Any]:
+    def analyze_flow_patterns(self,
+                              flow_type: FlowNature,
+                              time_window: Optional[Tuple[datetime,
+                                                          datetime]] = None) -> Dict[str,
+                                                                                     Any]:
         """Analyze patterns in resource or value flows."""
 
     @abstractmethod
@@ -242,7 +244,8 @@ class SFMQueryEngine(ABC):  # pylint: disable=too-many-public-methods
         """Identify inefficiencies in flow patterns."""
 
 
-class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public-methods
+class NetworkXSFMQueryEngine(
+        SFMQueryEngine):  # pylint: disable=too-many-public-methods
     """NetworkX-based implementation of SFM query engine."""
 
     def __init__(self, graph: SFMGraph):
@@ -347,7 +350,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             for target in subgraph.nodes():
                 if target != node_id:
                     try:
-                        path_length = nx.shortest_path_length(subgraph, node_id, target)
+                        path_length = nx.shortest_path_length(
+                            subgraph, node_id, target)
                         if path_length <= distance:
                             neighbors.add(target)
                     except (nx.NetworkXNoPath, nx.NodeNotFound):
@@ -356,7 +360,9 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         except (nx.NetworkXError, nx.NodeNotFound):
             return []
 
-    def _get_multihop_neighbors_all(self, node_id: uuid.UUID, distance: int) -> List[uuid.UUID]:
+    def _get_multihop_neighbors_all(self,
+                                    node_id: uuid.UUID,
+                                    distance: int) -> List[uuid.UUID]:
         """Get multi-hop neighbors for all relationship types."""
         try:
             # Check if node exists in graph
@@ -380,7 +386,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         # Multi-hop neighbors
         if relationship_kinds:
-            return self._get_multihop_neighbors_with_filter(node_id, relationship_kinds, distance)
+            return self._get_multihop_neighbors_with_filter(
+                node_id, relationship_kinds, distance)
         return self._get_multihop_neighbors_all(node_id, distance)
 
     def find_shortest_path(
@@ -398,7 +405,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             if relationship_kinds:
                 # Create subgraph with only desired relationship types
                 edges_to_keep = []
-                for u, v, key, data in self.nx_graph.edges(keys=True, data=True):
+                for u, v, key, data in self.nx_graph.edges(
+                        keys=True, data=True):
                     if data.get("kind") in relationship_kinds:
                         edges_to_keep.append((u, v, key))
 
@@ -446,7 +454,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         source_actors: Optional[List[uuid.UUID]] = None,
     ) -> FlowAnalysis:
         """Trace flows of specific resource types through the network."""
-        # This is a simplified implementation - would need more sophisticated flow analysis
+        # This is a simplified implementation - would need more sophisticated
+        # flow analysis
         flow_paths: List[List[uuid.UUID]] = []
         bottlenecks: List[uuid.UUID] = []
         flow_volumes: Dict[uuid.UUID, float] = {}
@@ -498,8 +507,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         # Get top 10% of nodes by centrality
         threshold = sorted(centrality.values())[-max(1, len(centrality) // 10)]
         bottlenecks = [
-            node_id for node_id, score in centrality.items() if score >= threshold
-        ]
+            node_id for node_id,
+            score in centrality.items() if score >= threshold]
 
         return bottlenecks
 
@@ -509,24 +518,25 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         """Calculate efficiency of flows between nodes."""
         try:
             path = self.find_shortest_path(source_id, target_id)
-            
+
             # Handle cases where no path exists or path is too short
             if not path or len(path) <= 1:
                 return 0.0
-                
+
             shortest_path_length = len(path) - 1
-            
+
             # Double-check for zero or negative path length
             if shortest_path_length <= 0:
                 return 0.0
 
             # Simple efficiency metric: inverse of path length
-            # Explicit ZeroDivisionError protection for Python 3.8 compatibility
+            # Explicit ZeroDivisionError protection for Python 3.8
+            # compatibility
             try:
                 return 1.0 / shortest_path_length
             except ZeroDivisionError:
                 return 0.0
-                
+
         except (nx.NetworkXError, TypeError):
             return 0.0
 
@@ -540,7 +550,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         # Get nodes within impact radius
         try:
-            ego_graph = nx.ego_graph(self.nx_graph, policy_id, radius=impact_radius)
+            ego_graph = nx.ego_graph(
+                self.nx_graph, policy_id, radius=impact_radius)
             affected_nodes = list(ego_graph.nodes())
 
             # Categorize affected nodes by type
@@ -585,7 +596,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         # Indirect targets (2-hop neighbors)
         indirect_targets = self.get_node_neighbors(policy_id, distance=2)
-        targets.extend([t for t in indirect_targets if t not in direct_targets])
+        targets.extend(
+            [t for t in indirect_targets if t not in direct_targets])
 
         return list(set(targets))
 
@@ -617,31 +629,29 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         # Basic metrics comparison
         for nx_graph in scenario_nx_graphs:
-            comparison["basic_metrics"]["node_counts"].append(nx_graph.number_of_nodes())
-            comparison["basic_metrics"]["relationship_counts"].append(nx_graph.number_of_edges())
+            comparison["basic_metrics"]["node_counts"].append(
+                nx_graph.number_of_nodes())
+            comparison["basic_metrics"]["relationship_counts"].append(
+                nx_graph.number_of_edges())
             comparison["basic_metrics"]["density_scores"].append(
                 nx.density(nx_graph) if nx_graph.number_of_nodes() > 0 else 0.0
             )
 
         # Structural comparison between scenarios
         comparison["structural_comparison"] = self._compare_scenario_structures(
-            scenario_nx_graphs
-        )
+            scenario_nx_graphs)
 
         # Policy impact analysis (if policy nodes exist)
         comparison["policy_impact_analysis"] = self._analyze_scenario_policy_impacts(
-            scenario_graphs
-        )
+            scenario_graphs)
 
         # Calculate similarity matrix between scenarios
         comparison["similarity_matrix"] = self._calculate_scenario_similarity_matrix(
-            scenario_nx_graphs
-        )
+            scenario_nx_graphs)
 
         # Identify key differences
         comparison["key_differences"] = self._identify_key_scenario_differences(
-            scenario_nx_graphs
-        )
+            scenario_nx_graphs)
 
         return comparison
 
@@ -668,13 +678,11 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             elif algorithm.lower() == "label_propagation":
                 # Use label propagation algorithm
                 communities = nx.algorithms.community.label_propagation_communities(
-                    undirected_graph
-                )
+                    undirected_graph)
             elif algorithm.lower() == "greedy_modularity":
                 # Use greedy modularity maximization
                 communities = nx.algorithms.community.greedy_modularity_communities(
-                    undirected_graph
-                )
+                    undirected_graph)
             else:
                 # Default to Louvain if unknown algorithm specified
                 communities = nx.algorithms.community.louvain_communities(
@@ -710,8 +718,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             -max(1, len(centrality) // 20)
         ]  # Top 5%
         structural_bridges = [
-            node_id for node_id, score in centrality.items() if score >= threshold
-        ]
+            node_id for node_id,
+            score in centrality.items() if score >= threshold]
 
         return structural_bridges
 
@@ -721,12 +729,14 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         if node_id not in self.nx_graph.nodes():
             return NodeMetrics(
                 node_id=node_id,
-                centrality_scores={"betweenness": 0.0, "closeness": 0.0, "degree": 0.0},
+                centrality_scores={
+                    "betweenness": 0.0,
+                    "closeness": 0.0,
+                    "degree": 0.0},
                 influence_score=0.0,
                 dependency_score=0.0,
                 connectivity=0,
-                node_type="Unknown"
-            )
+                node_type="Unknown")
 
         centrality_scores = {
             "betweenness": self.get_node_centrality(node_id, "betweenness"),
@@ -746,10 +756,13 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         return NodeMetrics(
             node_id=node_id,
             centrality_scores=centrality_scores,
-            influence_score=influence_score / len(neighbors) if neighbors else 0.0,
-            dependency_score=dependency_score / len(neighbors) if neighbors else 0.0,
+            influence_score=influence_score /
+            len(neighbors) if neighbors else 0.0,
+            dependency_score=dependency_score /
+            len(neighbors) if neighbors else 0.0,
             connectivity=len(neighbors),
-            node_type=type(self.nx_graph.nodes[node_id]["data"]).__name__,
+            node_type=type(
+                self.nx_graph.nodes[node_id]["data"]).__name__,
         )
 
     def system_vulnerability_analysis(self) -> Dict[str, Any]:
@@ -788,7 +801,7 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         # Track node changes
         for i in range(1, len(time_slice_graphs)):
-            prev_time, prev_graph = time_slice_graphs[i-1]
+            prev_time, prev_graph = time_slice_graphs[i - 1]
             curr_time, curr_graph = time_slice_graphs[i]
 
             prev_nodes = set(node.id for node in prev_graph)
@@ -815,13 +828,15 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         comp_nx = self._build_networkx_from_graph(comparison_graph)
 
         changes = {
-            "density_change": nx.density(comp_nx) - nx.density(ref_nx),
-            "node_count_change": comp_nx.number_of_nodes() - ref_nx.number_of_nodes(),
-            "edge_count_change": comp_nx.number_of_edges() - ref_nx.number_of_edges(),
+            "density_change": nx.density(comp_nx) -
+            nx.density(ref_nx),
+            "node_count_change": comp_nx.number_of_nodes() -
+            ref_nx.number_of_nodes(),
+            "edge_count_change": comp_nx.number_of_edges() -
+            ref_nx.number_of_edges(),
             "centrality_shifts": {},
             "new_communities": [],
-            "disbanded_communities": []
-        }
+            "disbanded_communities": []}
 
         # Analyze centrality shifts for common nodes
         common_nodes = set(ref_nx.nodes()) & set(comp_nx.nodes())
@@ -830,7 +845,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             comp_centrality = nx.betweenness_centrality(comp_nx)
 
             for node in common_nodes:
-                shift = comp_centrality.get(node, 0) - ref_centrality.get(node, 0)
+                shift = comp_centrality.get(
+                    node, 0) - ref_centrality.get(node, 0)
                 if abs(shift) > 0.1:  # Significant shift threshold
                     changes["centrality_shifts"][str(node)] = shift
 
@@ -849,7 +865,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         # Identify critical nodes (high betweenness centrality)
         centrality = nx.betweenness_centrality(self.nx_graph)
-        critical_threshold = sorted(centrality.values())[-max(1, len(centrality) // 20)]
+        critical_threshold = sorted(
+            centrality.values())[-max(1, len(centrality) // 20)]
         vulnerabilities["critical_nodes"] = [
             {"node_id": str(node_id), "centrality": score}
             for node_id, score in centrality.items()
@@ -884,20 +901,25 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             vulnerabilities["mitigation_recommendations"].append(
                 "High fragmentation risk detected. Consider adding redundant connections."
             )
-        if len(vulnerabilities["critical_nodes"]) > len(self.nx_graph.nodes()) * 0.2:
+        if len(
+                vulnerabilities["critical_nodes"]) > len(
+                self.nx_graph.nodes()) * 0.2:
             vulnerabilities["mitigation_recommendations"].append(
                 "Many critical nodes detected. Consider distributing centrality more evenly."
             )
 
         return vulnerabilities
 
-    def _calculate_connectivity_impact(self, sim_graph: nx.Graph,
+    def _calculate_connectivity_impact(self,
+                                       sim_graph: nx.Graph,
                                        original_components: int,
-                                       original_largest: int) -> Dict[str, Any]:
+                                       original_largest: int) -> Dict[str,
+                                                                      Any]:
         """Calculate connectivity impact metrics."""
         new_components = nx.number_weakly_connected_components(sim_graph)
         if sim_graph.number_of_nodes() > 0:
-            new_largest = len(max(nx.weakly_connected_components(sim_graph), key=len))
+            new_largest = len(
+                max(nx.weakly_connected_components(sim_graph), key=len))
         else:
             new_largest = 0
 
@@ -928,8 +950,10 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         self, node_ids: List[uuid.UUID], failure_mode: str = "cascade"
     ) -> Dict[str, Any]:
         """Simulate the impact of node failures on network connectivity."""
-        original_components = nx.number_weakly_connected_components(self.nx_graph)
-        original_largest = len(max(nx.weakly_connected_components(self.nx_graph), key=len))
+        original_components = nx.number_weakly_connected_components(
+            self.nx_graph)
+        original_largest = len(
+            max(nx.weakly_connected_components(self.nx_graph), key=len))
 
         # Create a copy of the graph for simulation
         sim_graph = self.nx_graph.copy()
@@ -948,8 +972,7 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         # Analyze impact
         impact_results["connectivity_impact"] = self._calculate_connectivity_impact(
-            sim_graph, original_components, original_largest
-        )
+            sim_graph, original_components, original_largest)
 
         # Identify newly isolated nodes
         isolated = [node for node in sim_graph.nodes()
@@ -959,11 +982,13 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         # Simulate cascading failures if requested
         if failure_mode == "cascade":
             cascade_nodes = self._simulate_cascade_failures(sim_graph)
-            impact_results["cascading_failures"] = [str(node) for node in cascade_nodes]
+            impact_results["cascading_failures"] = [
+                str(node) for node in cascade_nodes]
 
         return impact_results
 
-    def _get_relevant_flows(self, flow_type: FlowNature) -> List[Tuple[Any, Any, Dict[str, Any]]]:
+    def _get_relevant_flows(
+            self, flow_type: FlowNature) -> List[Tuple[Any, Any, Dict[str, Any]]]:
         """Get flows of the specified type."""
         relevant_flows = []
         for rel in self.nx_graph.edges(data=True):
@@ -985,22 +1010,32 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             node_flow_counts[flow_key] = node_flow_counts.get(flow_key, 0) + 1
         return node_flow_counts
 
-    def _identify_major_pathways(
-            self, relevant_flows: List[Tuple[Any, Any, Dict[str, Any]]]) -> List[Tuple[str, float]]:
+    def _identify_major_pathways(self,
+                                 relevant_flows: List[Tuple[Any,
+                                                            Any,
+                                                            Dict[str,
+                                                                 Any]]]) -> List[Tuple[str,
+                                                                                       float]]:
         """Identify major flow pathways (high-volume routes)."""
         pathway_volumes: Dict[str, float] = {}
         for source, target, data in relevant_flows:
             pathway_key = f"{source} -> {target}"
             volume = data.get("weight", 1.0)
-            pathway_volumes[pathway_key] = pathway_volumes.get(pathway_key, 0) + volume
+            pathway_volumes[pathway_key] = pathway_volumes.get(
+                pathway_key, 0) + volume
 
         # Sort and get top pathways
-        sorted_pathways = sorted(pathway_volumes.items(), key=lambda x: x[1], reverse=True)
+        sorted_pathways = sorted(
+            pathway_volumes.items(),
+            key=lambda x: x[1],
+            reverse=True)
         return sorted_pathways[:10]  # Top 10 pathways
 
-    def analyze_flow_patterns(
-        self, flow_type: FlowNature, time_window: Optional[Tuple[datetime, datetime]] = None
-    ) -> Dict[str, Any]:
+    def analyze_flow_patterns(self,
+                              flow_type: FlowNature,
+                              time_window: Optional[Tuple[datetime,
+                                                          datetime]] = None) -> Dict[str,
+                                                                                     Any]:
         """Analyze patterns in resource or value flows."""
         flow_analysis = {
             "flow_type": flow_type.value,
@@ -1016,10 +1051,12 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         flow_analysis["total_flows"] = len(relevant_flows)
 
         # Analyze flow distribution by node type
-        flow_analysis["flow_distribution"] = self._analyze_flow_distribution(relevant_flows)
+        flow_analysis["flow_distribution"] = self._analyze_flow_distribution(
+            relevant_flows)
 
         # Identify major flow pathways
-        flow_analysis["major_pathways"] = self._identify_major_pathways(relevant_flows)
+        flow_analysis["major_pathways"] = self._identify_major_pathways(
+            relevant_flows)
 
         return flow_analysis
 
@@ -1053,13 +1090,15 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             for s, t, count in node_pairs_with_multiple_paths[:10]  # Top 10
         ]
 
-        # Identify flow imbalances (nodes with very high in-degree vs out-degree)
+        # Identify flow imbalances (nodes with very high in-degree vs
+        # out-degree)
         for node in self.nx_graph.nodes():
             in_degree = len(list(self.nx_graph.predecessors(node)))
             out_degree = len(list(self.nx_graph.successors(node)))
 
             if in_degree > 0 and out_degree > 0:
-                imbalance_ratio = abs(in_degree - out_degree) / max(in_degree, out_degree)
+                imbalance_ratio = abs(
+                    in_degree - out_degree) / max(in_degree, out_degree)
                 if imbalance_ratio > 0.7:  # High imbalance threshold
                     inefficiencies["flow_imbalances"].append({
                         "node": str(node),
@@ -1070,7 +1109,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         return inefficiencies
 
-    def _build_networkx_from_graph(self, sfm_graph: SFMGraph) -> nx.MultiDiGraph:
+    def _build_networkx_from_graph(
+            self, sfm_graph: SFMGraph) -> nx.MultiDiGraph:
         """Helper method to build NetworkX graph from SFMGraph."""
         nx_graph = nx.MultiDiGraph()
 
@@ -1091,7 +1131,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         return nx_graph
 
-    def _compare_scenario_structures(self, scenario_graphs: List[nx.MultiDiGraph]) -> Dict[str, Any]:
+    def _compare_scenario_structures(
+            self, scenario_graphs: List[nx.MultiDiGraph]) -> Dict[str, Any]:
         """Compare structural properties across scenarios."""
         structural_metrics = {
             "centrality_differences": [],
@@ -1108,7 +1149,9 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
             current_centrality = nx.betweenness_centrality(graph)
 
             # Find common nodes
-            common_nodes = set(base_centrality.keys()) & set(current_centrality.keys())
+            common_nodes = set(
+                base_centrality.keys()) & set(
+                current_centrality.keys())
             if common_nodes:
                 centrality_diff = sum(
                     abs(current_centrality.get(node, 0) - base_centrality.get(node, 0))
@@ -1123,7 +1166,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         for i, graph in enumerate(scenario_graphs):
             try:
                 simple_graph = nx.Graph(graph.to_undirected())
-                clustering = nx.average_clustering(simple_graph) if simple_graph.number_of_nodes() > 0 else 0.0
+                clustering = nx.average_clustering(
+                    simple_graph) if simple_graph.number_of_nodes() > 0 else 0.0
                 structural_metrics["clustering_differences"].append({
                     "scenario": i,
                     "clustering_coefficient": clustering
@@ -1136,7 +1180,8 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         return structural_metrics
 
-    def _analyze_scenario_policy_impacts(self, scenario_graphs: List[SFMGraph]) -> Dict[str, Any]:
+    def _analyze_scenario_policy_impacts(
+            self, scenario_graphs: List[SFMGraph]) -> Dict[str, Any]:
         """Analyze policy impact differences across scenarios."""
         policy_analysis = {
             "policy_nodes_per_scenario": [],
@@ -1157,10 +1202,12 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
 
         return policy_analysis
 
-    def _calculate_scenario_similarity_matrix(self, scenario_graphs: List[nx.MultiDiGraph]) -> List[List[float]]:
+    def _calculate_scenario_similarity_matrix(
+            self, scenario_graphs: List[nx.MultiDiGraph]) -> List[List[float]]:
         """Calculate similarity matrix between all scenario pairs."""
         n_scenarios = len(scenario_graphs)
-        similarity_matrix = [[0.0 for _ in range(n_scenarios)] for _ in range(n_scenarios)]
+        similarity_matrix = [
+            [0.0 for _ in range(n_scenarios)] for _ in range(n_scenarios)]
 
         for i in range(n_scenarios):
             for j in range(n_scenarios):
@@ -1178,11 +1225,13 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
                     else:
                         intersection = len(nodes_i & nodes_j)
                         union = len(nodes_i | nodes_j)
-                        similarity_matrix[i][j] = intersection / union if union > 0 else 0.0
+                        similarity_matrix[i][j] = intersection / \
+                            union if union > 0 else 0.0
 
         return similarity_matrix
 
-    def _identify_key_scenario_differences(self, scenario_graphs: List[nx.MultiDiGraph]) -> List[Dict[str, Any]]:
+    def _identify_key_scenario_differences(
+            self, scenario_graphs: List[nx.MultiDiGraph]) -> List[Dict[str, Any]]:
         """Identify key structural differences between scenarios."""
         differences = []
 

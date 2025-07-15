@@ -32,11 +32,12 @@ VALIDATION_RATE_LIMIT = 50  # requests per minute per IP
 VALIDATION_RATE_WINDOW = 60  # seconds
 VALIDATION_RATE_LIMITING_ENABLED = True  # Can be disabled for testing
 validation_rate_storage: DefaultDict[str, Deque[float]] = defaultdict(deque)
-_current_caller_context: Optional[str] = None  # Global context for current caller
+# Global context for current caller
+_current_caller_context: Optional[str] = None
 
 # Bleach configuration for advanced HTML sanitization
 ALLOWED_TAGS = ['b', 'i', 'em', 'strong', 'u', 'br', 'p']
-ALLOWED_ATTRIBUTES = {}
+ALLOWED_ATTRIBUTES: Dict[str, List[str]] = {}
 ALLOWED_PROTOCOLS = ['http', 'https', 'mailto']
 
 # Public API
@@ -84,10 +85,10 @@ DANGEROUS_REGEX = re.compile('|'.join(DANGEROUS_PATTERNS), re.IGNORECASE)
 def rate_limit_validation(func: Callable) -> Callable:
     """
     Decorator to apply rate limiting to validation functions.
-    
+
     Args:
         func: Function to rate limit
-        
+
     Returns:
         Decorated function with rate limiting
     """
@@ -96,17 +97,18 @@ def rate_limit_validation(func: Callable) -> Callable:
         # Skip rate limiting if disabled
         if not VALIDATION_RATE_LIMITING_ENABLED:
             return func(*args, **kwargs)
-            
+
         # Get caller ID from global context or use default
         caller_id = _current_caller_context or 'direct_call'
-        
+
         current_time = time.time()
-        
+
         # Clean old entries
         caller_requests = validation_rate_storage[caller_id]
-        while caller_requests and current_time - caller_requests[0] > VALIDATION_RATE_WINDOW:
+        while caller_requests and current_time - \
+                caller_requests[0] > VALIDATION_RATE_WINDOW:
             caller_requests.popleft()
-        
+
         # Check if limit exceeded
         if len(caller_requests) >= VALIDATION_RATE_LIMIT:
             logger.warning(
@@ -119,21 +121,25 @@ def rate_limit_validation(func: Callable) -> Callable:
                 field="rate_limit",
                 value=len(caller_requests)
             )
-        
+
         # Add current request
         caller_requests.append(current_time)
-        
+
         # Call the original function
         return func(*args, **kwargs)
-    
+
     return wrapper
 
 
 class SecurityValidationError(Exception):
     """Raised when input fails security validation."""
 
-    def __init__(self, message: str, field: Optional[str] = None,
-                 value: Optional[Any] = None, context: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self,
+                 message: str,
+                 field: Optional[str] = None,
+                 value: Optional[Any] = None,
+                 context: Optional[Dict[str,
+                                        Any]] = None) -> None:
         self.message = message
         self.field = field
         self.value = value
@@ -204,19 +210,19 @@ def sanitize_string(value: str, max_length: int = MAX_STRING_LENGTH) -> str:
             protocols=ALLOWED_PROTOCOLS,
             strip=True
         )
-        
+
         # Second pass: HTML escape any remaining content
         sanitized = html.escape(cleaned, quote=True)
-        
+
         # Log if content was modified during sanitization
         if sanitized != original_value:
             logger.info(
                 "Content sanitized: original length=%d, sanitized length=%d",
                 len(original_value), len(sanitized)
             )
-        
+
         return sanitized
-        
+
     except Exception as e:
         error = SecurityValidationError(
             f"Sanitization failed: {str(e)}",
@@ -259,11 +265,13 @@ def validate_metadata(metadata: Dict[str, Any],
     """
     if len(metadata) > MAX_METADATA_KEYS:
         error = SecurityValidationError(
-            f"Too many metadata keys: {len(metadata)} > {MAX_METADATA_KEYS}",
+            f"Too many metadata keys: {
+                len(metadata)} > {MAX_METADATA_KEYS}",
             field="keys",
             value=len(metadata),
-            context={"max_keys": MAX_METADATA_KEYS, "actual_keys": len(metadata)}
-        )
+            context={
+                "max_keys": MAX_METADATA_KEYS,
+                "actual_keys": len(metadata)})
         error.log_failure(logger)
         raise error
 
@@ -309,18 +317,22 @@ def _sanitize_dict(data: Dict[Any, Any], depth: int) -> Dict[str, Any]:
 
         # Sanitize value based on type
         if isinstance(value, str):
-            sanitized[sanitized_key] = sanitize_string(value, MAX_METADATA_VALUE_LENGTH)
+            sanitized[sanitized_key] = sanitize_string(
+                value, MAX_METADATA_VALUE_LENGTH)
         elif isinstance(value, dict):
-            sanitized[sanitized_key] = _sanitize_dict(cast(Dict[Any, Any], value), depth - 1)
+            sanitized[sanitized_key] = _sanitize_dict(
+                value, depth - 1)
         elif isinstance(value, list):
-            sanitized[sanitized_key] = _sanitize_list(cast(List[Any], value), depth - 1)
+            sanitized[sanitized_key] = _sanitize_list(
+                value, depth - 1)
         elif isinstance(value, (int, float, bool)):
             sanitized[sanitized_key] = value
         elif value is None:
             sanitized[sanitized_key] = None
         else:
             # Convert unknown types to sanitized strings
-            sanitized[sanitized_key] = sanitize_string(str(value), MAX_METADATA_VALUE_LENGTH)
+            sanitized[sanitized_key] = sanitize_string(
+                str(value), MAX_METADATA_VALUE_LENGTH)
 
     return sanitized
 
@@ -351,15 +363,19 @@ def _sanitize_list(data: List[Any], depth: int) -> List[Any]:
         if isinstance(item, str):
             sanitized.append(sanitize_string(item, MAX_METADATA_VALUE_LENGTH))
         elif isinstance(item, dict):
-            sanitized.append(_sanitize_dict(cast(Dict[Any, Any], item), depth - 1))
+            sanitized.append(_sanitize_dict(
+                item, depth - 1))
         elif isinstance(item, list):
-            sanitized.append(_sanitize_list(cast(List[Any], item), depth - 1))
+            sanitized.append(_sanitize_list(item, depth - 1))
         elif isinstance(item, (int, float, bool)):
             sanitized.append(item)
         elif item is None:
             sanitized.append(None)
         else:
-            sanitized.append(sanitize_string(str(item), MAX_METADATA_VALUE_LENGTH))
+            sanitized.append(
+                sanitize_string(
+                    str(item),
+                    MAX_METADATA_VALUE_LENGTH))
 
     return sanitized
 
@@ -508,7 +524,8 @@ def validate_and_sanitize_node_data(data: Dict[str, Any]) -> Dict[str, Any]:
             sanitized["label"] = validate_node_label(data["label"])
 
         if "description" in data:
-            sanitized["description"] = validate_node_description(data["description"])
+            sanitized["description"] = validate_node_description(
+                data["description"])
 
         # Validate metadata
         if "meta" in data and data["meta"]:
@@ -524,9 +541,11 @@ def validate_and_sanitize_node_data(data: Dict[str, Any]) -> Dict[str, Any]:
                 else:
                     sanitized[key] = value
 
-        logger.info("Node data validated successfully with %d fields", len(sanitized))
+        logger.info(
+            "Node data validated successfully with %d fields",
+            len(sanitized))
         return sanitized
-        
+
     except Exception as e:
         error = SecurityValidationError(
             f"Node data validation failed: {str(e)}",
@@ -541,7 +560,7 @@ def validate_and_sanitize_node_data(data: Dict[str, Any]) -> Dict[str, Any]:
 def set_validation_caller_context(caller_id: str) -> None:
     """
     Set caller context for rate limiting validation operations.
-    
+
     Args:
         caller_id: Identifier for the caller (e.g., IP address)
     """
@@ -549,35 +568,40 @@ def set_validation_caller_context(caller_id: str) -> None:
     _current_caller_context = caller_id
 
 
-def get_validation_rate_limit_status(caller_id: Optional[str] = None) -> Dict[str, Any]:
+def get_validation_rate_limit_status(
+        caller_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Get current rate limit status for a caller.
-    
+
     Args:
         caller_id: Identifier for the caller (uses current context if not provided)
-        
+
     Returns:
         Dictionary with rate limit status information
     """
     # Use provided caller_id or current context
     if caller_id is None:
         caller_id = _current_caller_context or 'direct_call'
-    
+
     current_time = time.time()
     caller_requests = validation_rate_storage[caller_id]
-    
+
     # Clean old entries
-    while caller_requests and current_time - caller_requests[0] > VALIDATION_RATE_WINDOW:
+    while caller_requests and current_time - \
+            caller_requests[0] > VALIDATION_RATE_WINDOW:
         caller_requests.popleft()
-    
+
     return {
         "caller_id": caller_id,
         "current_requests": len(caller_requests),
         "limit": VALIDATION_RATE_LIMIT,
         "window_seconds": VALIDATION_RATE_WINDOW,
-        "remaining_requests": max(0, VALIDATION_RATE_LIMIT - len(caller_requests)),
-        "window_reset_time": current_time + VALIDATION_RATE_WINDOW if caller_requests else None
-    }
+        "remaining_requests": max(
+            0,
+            VALIDATION_RATE_LIMIT -
+            len(caller_requests)),
+        "window_reset_time": current_time +
+        VALIDATION_RATE_WINDOW if caller_requests else None}
 
 
 def disable_validation_rate_limiting() -> None:

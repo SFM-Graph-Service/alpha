@@ -41,15 +41,18 @@ class FeedbackLoop(Node):
     description: Optional[str] = None
     polarity: Optional[FeedbackPolarity] = None  # "reinforcing" or "balancing"
     strength: Optional[float] = None  # Measure of loop strength/impact
-    type: Optional[FeedbackType] = None  # e.g. "positive", "negative", "neutral"
+    # e.g. "positive", "negative", "neutral"
+    type: Optional[FeedbackType] = None
 
 
 @dataclass
 class TechnologySystem(Node):
     """Coherent system of techniques, tools and knowledge."""
 
-    maturity: Optional[TechnologyReadinessLevel] = None  # Technology readiness level
-    compatibility: Dict[str, float] = field(default_factory=lambda: {})  # Fit with other systems
+    # Technology readiness level
+    maturity: Optional[TechnologyReadinessLevel] = None
+    compatibility: Dict[str, float] = field(
+        default_factory=lambda: {})  # Fit with other systems
 
 
 @dataclass
@@ -59,15 +62,18 @@ class Indicator(Node):
     value_category: Optional[ValueCategory] = (
         None  # Non-default field moved to the beginning
     )
-    measurement_unit: Optional[str] = None  # Non-default field moved to the beginning
+    # Non-default field moved to the beginning
+    measurement_unit: Optional[str] = None
     current_value: Optional[float] = None
     target_value: Optional[float] = None
     threshold_values: Dict[str, float] = field(default_factory=lambda: {})
-    temporal_dynamics: Optional[TemporalDynamics] = None  # Track changes over time
+    # Track changes over time
+    temporal_dynamics: Optional[TemporalDynamics] = None
 
     def __post_init__(self) -> None:
         """Validate indicator configuration after initialization."""
-        # Validate value category context if measurement unit suggests measurement type
+        # Validate value category context if measurement unit suggests
+        # measurement type
         if self.value_category and self.measurement_unit:
             # Infer measurement context from measurement unit
             measurement_context = "quantitative"  # Default assumption
@@ -102,8 +108,10 @@ class SystemProperty(Node):
     value: Any = None
     unit: Optional[str] = None
     timestamp: datetime = field(default_factory=datetime.now)
-    affected_nodes: List[uuid.UUID] = field(default_factory=lambda: [])  # Nodes that this property applies to
-    contributing_relationships: List[uuid.UUID] = field(default_factory=lambda: [])  # Relationships that contribute to this property
+    # Nodes that this property applies to
+    affected_nodes: List[uuid.UUID] = field(default_factory=lambda: [])
+    contributing_relationships: List[uuid.UUID] = field(
+        default_factory=lambda: [])  # Relationships that contribute to this property
     # id, name, and description are inherited from Node
 
 

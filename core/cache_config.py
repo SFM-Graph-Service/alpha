@@ -15,7 +15,7 @@ class CacheLayerConfig:
     backend: str = 'memory'
     ttl: int = 3600
     max_size: int = 1000
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -32,7 +32,7 @@ class RedisConfig:
     port: int = 6379
     db: int = 0
     password: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -71,33 +71,33 @@ CACHE_CONFIG = {
 
 class CacheConfigManager:
     """Manager for cache configuration settings."""
-    
+
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or CACHE_CONFIG.copy()
-    
+
     def get_layer_config(self, layer_name: str) -> CacheLayerConfig:
         """Get configuration for a specific cache layer."""
         layer_config = self.config.get(layer_name, self.config['default'])
         return CacheLayerConfig(
-            backend=layer_config.get('backend', 'memory'),
-            ttl=layer_config.get('ttl', 3600),
-            max_size=layer_config.get('max_size', 1000)
+            backend=str(layer_config.get('backend', 'memory')),
+            ttl=int(layer_config.get('ttl', 3600) or 3600),
+            max_size=int(layer_config.get('max_size', 1000) or 1000)
         )
-    
+
     def get_redis_config(self) -> RedisConfig:
         """Get Redis configuration."""
         redis_config = self.config.get('redis', {})
         return RedisConfig(
-            host=redis_config.get('host', 'localhost'),
-            port=redis_config.get('port', 6379),
-            db=redis_config.get('db', 0),
-            password=redis_config.get('password')
+            host=str(redis_config.get('host', 'localhost')),
+            port=int(redis_config.get('port', 6379) or 6379),
+            db=int(redis_config.get('db', 0) or 0),
+            password=str(redis_config.get('password') or '')
         )
-    
+
     def update_config(self, updates: Dict[str, Any]) -> None:
         """Update configuration with new values."""
         self.config.update(updates)
-    
+
     def get_config(self) -> Dict[str, Any]:
         """Get the full configuration."""
         return self.config.copy()

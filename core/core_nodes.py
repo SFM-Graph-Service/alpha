@@ -33,7 +33,8 @@ class Actor(Node):
     # Additional SFM-relevant fields
     power_resources: Dict[str, float] = field(default_factory=lambda: {})
     decision_making_capacity: Optional[float] = None
-    institutional_affiliations: List[uuid.UUID] = field(default_factory=lambda: [])
+    institutional_affiliations: List[uuid.UUID] = field(
+        default_factory=lambda: [])
     cognitive_frameworks: List[uuid.UUID] = field(default_factory=lambda: [])
     behavioral_patterns: List[uuid.UUID] = field(default_factory=lambda: [])
 
@@ -78,7 +79,8 @@ class Process(Node):
     """
 
     technology: Optional[str] = None  # e.g. "EAF-Steel-2024"
-    responsible_actor_id: Optional[str] = None  # Actor that controls the process
+    # Actor that controls the process
+    responsible_actor_id: Optional[str] = None
 
 
 @dataclass
@@ -93,7 +95,8 @@ class Flow(Node):  # pylint: disable=too-many-instance-attributes
     scenario: Optional[Scenario] = None
 
     # Additional SFM-specific fields
-    flow_type: FlowType = FlowType.MATERIAL  # material, energy, information, financial, social
+    # material, energy, information, financial, social
+    flow_type: FlowType = FlowType.MATERIAL
     source_process_id: Optional[uuid.UUID] = None
     target_process_id: Optional[uuid.UUID] = None
     transformation_coefficient: Optional[float] = None

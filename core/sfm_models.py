@@ -18,8 +18,14 @@ The classes have been organized into smaller, focused modules:
 from core.meta_entities import TimeSlice, SpatialUnit, Scenario
 from core.base_nodes import Node
 from core.core_nodes import (
-    Actor, Institution, Policy, Resource, Process, Flow, ValueFlow, GovernanceStructure
-)
+    Actor,
+    Institution,
+    Policy,
+    Resource,
+    Process,
+    Flow,
+    ValueFlow,
+    GovernanceStructure)
 from core.specialized_nodes import (
     BeliefSystem, TechnologySystem, Indicator, FeedbackLoop, SystemProperty,
     AnalyticalContext, PolicyInstrument
