@@ -96,62 +96,74 @@ class TestAPISecurityIntegration(unittest.TestCase):
         self.client = TestClient(app)
         # Clear rate limiting storage
         rate_limit_storage.clear()
-
-    @patch('core.sfm_service.get_sfm_service')
-    def test_create_actor_with_dangerous_input_via_api(self, mock_get_service):
-        """Test creating actor with dangerous input through API."""
-        # Mock service to raise security validation error
-        mock_service = MagicMock()
-        mock_service.create_actor.side_effect = SFMError("Failed to create actor: Input contains potentially dangerous content")
-        mock_get_service.return_value = mock_service
         
+        # Set up authentication for protected endpoint tests
+        from core.security import auth_manager, UserCreate, Role
+        
+        # Clear existing users
+        auth_manager.users = {}
+        auth_manager.user_credentials = {}
+        
+        # Create test user with WRITE permission
+        test_user = UserCreate(
+            username="test_user",
+            email="test@example.com",
+            password="TestPass123!",
+            role=Role.USER  # USER role has WRITE permission
+        )
+        auth_manager.create_user(test_user)
+        
+        # Get authentication token
+        self.token = self._get_auth_token("test_user", "TestPass123!")
+        self.auth_headers = {"Authorization": f"Bearer {self.token}"}
+    
+    def _get_auth_token(self, username: str, password: str) -> str:
+        """Helper to get authentication token."""
+        login_data = {"username": username, "password": password}
+        response = self.client.post("/auth/login", json=login_data)
+        if response.status_code != 200:
+            raise Exception(f"Failed to login: {response.json()}")
+        return response.json()["access_token"]
+
+    def test_create_actor_with_dangerous_input_via_api(self):
+        """Test creating actor with dangerous input through API - should be sanitized and accepted."""
         # Attempt to create actor with dangerous input
         dangerous_data = {
             "name": "<script>alert('xss')</script>",
             "description": "Test description"
         }
         
-        response = self.client.post("/actors", json=dangerous_data)
+        response = self.client.post("/actors", json=dangerous_data, headers=self.auth_headers)
         
-        # Should return 400 error (security validation returns 400)
-        self.assertEqual(response.status_code, 400)
-        # Check for security validation error message
+        # Should return 201 (success) because dangerous content gets sanitized
+        self.assertEqual(response.status_code, 201)
+        
+        # Verify that the response shows the input was sanitized
         response_data = response.json()
-        message = response_data.get("message", "").lower()
-        self.assertTrue(
-            "security validation failed" in message
-            or "dangerous content" in message
-            or "dangerous pattern" in message
-        )
-
-    @patch('core.sfm_service.get_sfm_service')
-    def test_create_actor_with_valid_input_via_api(self, mock_get_service: MagicMock):
-        """Test creating actor with valid input through API."""
-        # Mock service to return successful response
-        from core.sfm_service import NodeResponse
-        mock_service = MagicMock()
-        mock_response = NodeResponse(
-            id="123e4567-e89b-12d3-a456-426614174000",
-            label="Valid Actor",
-            description="Valid description",
-            node_type="Actor",
-            meta={},
-            created_at="2023-01-01T00:00:00"
-        )
-        mock_service.create_actor.return_value = mock_response
-        mock_get_service.return_value = mock_service
+        # The script tag should be stripped out and content should be HTML escaped
+        self.assertNotIn("<script>", response_data["label"])
+        self.assertNotIn("</script>", response_data["label"])
+        # But the word "alert" should still be there (sanitized)
+        self.assertIn("alert", response_data["label"])
         
+        # Test description should be unchanged since it's not dangerous
+        self.assertEqual(response_data["description"], "Test description")
+
+    def test_create_actor_with_valid_input_via_api(self):
+        """Test creating actor with valid input through API."""
         # Create actor with valid input
         valid_data = {
             "name": "Valid Actor",
             "description": "Valid description"
         }
         
-        response = self.client.post("/actors", json=valid_data)
+        response = self.client.post("/actors", json=valid_data, headers=self.auth_headers)
         
         # Should succeed
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.json()["label"], "Valid Actor")
+        response_data = response.json()
+        self.assertEqual(response_data["label"], "Valid Actor")
+        self.assertEqual(response_data["description"], "Valid description")
 
     def test_health_endpoint_security(self):
         """Test that health endpoint is accessible and secure."""
@@ -181,16 +193,44 @@ class TestAPIValidationErrorHandling(unittest.TestCase):
         """Set up test client."""
         self.client = TestClient(app)
         rate_limit_storage.clear()
+        
+        # Set up authentication for protected endpoint tests
+        from core.security import auth_manager, UserCreate, Role
+        
+        # Clear existing users
+        auth_manager.users = {}
+        auth_manager.user_credentials = {}
+        
+        # Create test user with WRITE permission
+        test_user = UserCreate(
+            username="test_user",
+            email="test@example.com",
+            password="TestPass123!",
+            role=Role.USER  # USER role has WRITE permission
+        )
+        auth_manager.create_user(test_user)
+        
+        # Get authentication token
+        self.token = self._get_auth_token("test_user", "TestPass123!")
+        self.auth_headers = {"Authorization": f"Bearer {self.token}"}
+    
+    def _get_auth_token(self, username: str, password: str) -> str:
+        """Helper to get authentication token."""
+        login_data = {"username": username, "password": password}
+        response = self.client.post("/auth/login", json=login_data)
+        if response.status_code != 200:
+            raise Exception(f"Failed to login: {response.json()}")
+        return response.json()["access_token"]
 
-    @patch('core.sfm_service.get_sfm_service')
-    def test_validation_error_handling(self, mock_get_service):
+    @patch('api.sfm_api.get_sfm_service_dependency')
+    def test_validation_error_handling(self, mock_get_service_dependency):
         """Test proper handling of validation errors."""
         # Mock service to raise validation error
         mock_service = MagicMock()
         mock_service.create_actor.side_effect = SFMValidationError("Actor name is required", "name")
-        mock_get_service.return_value = mock_service
+        mock_get_service_dependency.return_value = mock_service
         
-        response = self.client.post("/actors", json={"name": ""})
+        response = self.client.post("/actors", json={"name": ""}, headers=self.auth_headers)
         
         # Accept either 400 (preferred) or 500 (fallback) depending on handler
         self.assertIn(response.status_code, (400, 500))
@@ -215,15 +255,15 @@ class TestAPIValidationErrorHandling(unittest.TestCase):
                 or "validation" in message_lower
             )
 
-    @patch('core.sfm_service.get_sfm_service')  
-    def test_not_found_error_handling(self, mock_get_service):
+    @patch('api.sfm_api.get_sfm_service_dependency')  
+    def test_not_found_error_handling(self, mock_get_service_dependency):
         """Test proper handling of not found errors."""
         # Mock service to return None (actor not found)
         mock_service = MagicMock()
         mock_service.get_actor.return_value = None
-        mock_get_service.return_value = mock_service
+        mock_get_service_dependency.return_value = mock_service
         
-        response = self.client.get("/actors/123e4567-e89b-12d3-a456-426614174000")
+        response = self.client.get("/actors/123e4567-e89b-12d3-a456-426614174000", headers=self.auth_headers)
         
         # Should return 404 Not Found
         self.assertEqual(response.status_code, 404)
@@ -232,7 +272,7 @@ class TestAPIValidationErrorHandling(unittest.TestCase):
 
     def test_invalid_uuid_format_handling(self):
         """Test handling of invalid UUID formats."""
-        response = self.client.get("/actors/invalid-uuid")
+        response = self.client.get("/actors/invalid-uuid", headers=self.auth_headers)
         
         # Should return 400 Bad Request
         self.assertEqual(response.status_code, 400)
