@@ -111,6 +111,9 @@ class AuthTestUtils:
     @staticmethod
     def setup_auth_mocks(app):
         """Set up authentication mocks for testing."""
+        # Import required modules
+        from core.security import get_current_user, validate_input, require_permission, require_role, Permission, Role
+        
         # Create a test user with admin permissions (has access to everything)
         test_user = AuthTestUtils.create_test_user(role=Role.ADMIN)
         
@@ -125,9 +128,22 @@ class AuthTestUtils:
             return True
         
         # Override the core authentication functions
-        from core.security import get_current_user, validate_input
         app.dependency_overrides[get_current_user] = mock_auth_dependency
         app.dependency_overrides[validate_input] = mock_validate_input
+        
+        # Create and override the specific permission dependency used in the endpoint
+        # The endpoint uses require_permission(Permission.ANALYTICS)
+        analytics_permission_dep = require_permission(Permission.ANALYTICS)
+        app.dependency_overrides[analytics_permission_dep] = mock_auth_dependency
+        
+        # Override all possible permission and role dependencies for completeness
+        for permission in Permission:
+            permission_dep = require_permission(permission)
+            app.dependency_overrides[permission_dep] = mock_auth_dependency
+            
+        for role in Role:
+            role_dep = require_role(role)
+            app.dependency_overrides[role_dep] = mock_auth_dependency
         
         # Mock the auth manager's methods
         import unittest.mock
@@ -135,9 +151,37 @@ class AuthTestUtils:
         
         # Mock require_permission to always return a function that returns test_user
         def mock_require_permission_method(permission):
-            return lambda: test_user
+            def mock_permission_check(*args, **kwargs):
+                return test_user
+            return mock_permission_check
         
         unittest.mock.patch.object(auth_manager, 'require_permission', side_effect=mock_require_permission_method).start()
+        
+        # Mock require_role to always return a function that returns test_user
+        def mock_require_role_method(role):
+            def mock_role_check(*args, **kwargs):
+                return test_user
+            return mock_role_check
+        
+        unittest.mock.patch.object(auth_manager, 'require_role', side_effect=mock_require_role_method).start()
+        
+        # Completely disable rate limiting for tests
+        app.state.limiter = None
+        
+        # Mock the slowapi imports to prevent rate limiting
+        import unittest.mock
+        import slowapi.errors
+        
+        # Create a do-nothing rate limiter that doesn't interfere with parameters
+        class MockLimiter:
+            def limit(self, rate_limit_string):
+                def decorator(func):
+                    return func  # Return the function unchanged
+                return decorator
+        
+        # Replace the limiter with our mock
+        from core.security import limiter
+        limiter.limit = MockLimiter().limit
         
         # Mock require_role to always return a function that returns test_user
         def mock_require_role_method(role):
