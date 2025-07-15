@@ -16,5 +16,6 @@ coverage
 bleach
 cachetools
 redis
+redis
 prometheus-client
 PyYAML
