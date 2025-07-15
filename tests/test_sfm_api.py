@@ -17,6 +17,15 @@ from fastapi import status
 
 # Import the API and related components
 from api.sfm_api import app, get_sfm_service_dependency
+from core.security import (
+    get_current_user, 
+    require_permission, 
+    require_role,
+    auth_manager,
+    User,
+    Role,
+    Permission
+)
 from core.sfm_service import (
     SFMService,
     SFMServiceConfig,
@@ -39,11 +48,101 @@ from core.sfm_service import (
 from core.sfm_models import Actor, Institution, Policy, Resource, Relationship
 from core.sfm_enums import ResourceType
 
-# Import centralized mock infrastructure
 from tests.mocks import (
     create_mock_graph,
     create_sample_nodes
 )
+
+
+# Authentication test utilities
+class AuthTestUtils:
+    """Utility class for authentication testing."""
+    
+    @staticmethod
+    def create_test_user(username: str = "testuser", role: Role = Role.USER) -> User:
+        """Create a test user for authentication testing."""
+        return User(
+            username=username,
+            email=f"{username}@example.com",
+            role=role,
+            created_at=datetime.now()
+        )
+    
+    @staticmethod
+    def create_test_token(user: User) -> str:
+        """Create a test JWT token for a user."""
+        # Add user to auth manager if not already there
+        if user.username not in auth_manager.users:
+            auth_manager.users[user.username] = user
+        return auth_manager.create_access_token({"sub": user.username})
+    
+    @staticmethod
+    def get_auth_headers(user: User) -> Dict[str, str]:
+        """Get authentication headers for a test user."""
+        token = AuthTestUtils.create_test_token(user)
+        return {"Authorization": f"Bearer {token}"}
+    
+    @staticmethod
+    def mock_current_user(user: User):
+        """Mock the current user dependency."""
+        def mock_dependency():
+            return user
+        return mock_dependency
+    
+    @staticmethod
+    def mock_require_permission(permission: Permission):
+        """Mock the require_permission dependency."""
+        def mock_dependency():
+            def permission_checker():
+                # Create a test user with the required permission
+                if permission == Permission.READ:
+                    return AuthTestUtils.create_test_user(role=Role.USER)
+                elif permission == Permission.WRITE:
+                    return AuthTestUtils.create_test_user(role=Role.USER)
+                elif permission == Permission.ANALYTICS:
+                    return AuthTestUtils.create_test_user(role=Role.ANALYST)
+                elif permission == Permission.ADMIN:
+                    return AuthTestUtils.create_test_user(role=Role.ADMIN)
+                else:
+                    return AuthTestUtils.create_test_user(role=Role.USER)
+            return permission_checker
+        return mock_dependency
+    
+    @staticmethod
+    def setup_auth_mocks(app):
+        """Set up authentication mocks for testing."""
+        # Create a test user
+        test_user = AuthTestUtils.create_test_user()
+        
+        # Mock the auth manager methods directly
+        def mock_get_current_user(*args, **kwargs):
+            return test_user
+        
+        def mock_require_permission(permission):
+            def permission_checker(*args, **kwargs):
+                return test_user
+            return permission_checker
+        
+        def mock_require_role(role):
+            def role_checker(*args, **kwargs):
+                return test_user
+            return role_checker
+        
+        # Patch the auth manager methods
+        import unittest.mock
+        app.dependency_overrides[get_current_user] = mock_get_current_user
+        
+        # We need to mock the validate_input dependency as well
+        def mock_validate_input(*args, **kwargs):
+            return True
+        
+        from core.security import validate_input
+        app.dependency_overrides[validate_input] = mock_validate_input
+        
+        # Patch the authentication manager's methods 
+        unittest.mock.patch.object(auth_manager, 'get_current_user', return_value=test_user).start()
+        unittest.mock.patch.object(auth_manager, 'require_permission', side_effect=mock_require_permission).start()
+        unittest.mock.patch.object(auth_manager, 'require_role', side_effect=mock_require_role).start()
 
 
 class TestSFMAPIHealth(unittest.TestCase):
@@ -56,10 +155,16 @@ class TestSFMAPIHealth(unittest.TestCase):
         
         # Mock service dependency
         app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        
+        # Set up authentication mocks
+        AuthTestUtils.setup_auth_mocks(app)
 
     def tearDown(self):
         """Clean up after tests."""
         app.dependency_overrides.clear()
+        # Stop all patches
+        import unittest.mock
+        unittest.mock.patch.stopall()
 
     def test_root_endpoint(self):
         """Test the root endpoint returns API information."""
@@ -115,6 +220,9 @@ class TestSFMAPIStatistics(unittest.TestCase):
         
         # Mock service dependency
         app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        
+        # Set up authentication mocks
+        AuthTestUtils.setup_auth_mocks(app)
 
     def tearDown(self):
         """Clean up after tests."""
@@ -232,6 +340,9 @@ class TestSFMAPIActors(unittest.TestCase):
         
         # Mock service dependency
         app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        
+        # Set up authentication mocks
+        AuthTestUtils.setup_auth_mocks(app)
 
     def tearDown(self):
         """Clean up after tests."""
@@ -239,6 +350,10 @@ class TestSFMAPIActors(unittest.TestCase):
 
     def test_create_actor_success(self):
         """Test successful actor creation."""
+        # Create a test user and get auth headers
+        test_user = AuthTestUtils.create_test_user()
+        headers = AuthTestUtils.get_auth_headers(test_user)
+        
         # Mock response
         actor_id = str(uuid.uuid4())
         mock_response = NodeResponse(
@@ -260,7 +375,7 @@ class TestSFMAPIActors(unittest.TestCase):
             "meta": {"test": "true"}
         }
         
-        response = self.client.post("/actors", json=request_data)
+        response = self.client.post("/actors", json=request_data, headers=headers)
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.json()
@@ -367,6 +482,9 @@ class TestSFMAPIInstitutions(unittest.TestCase):
         
         # Mock service dependency
         app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        
+        # Set up authentication mocks
+        AuthTestUtils.setup_auth_mocks(app)
 
     def tearDown(self):
         """Clean up after tests."""
@@ -451,6 +569,9 @@ class TestSFMAPIErrorHandling(unittest.TestCase):
         
         # Mock service dependency
         app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        
+        # Set up authentication mocks
+        AuthTestUtils.setup_auth_mocks(app)
 
     def tearDown(self):
         """Clean up after tests."""
@@ -595,6 +716,9 @@ class TestSFMAPIIntegration(unittest.TestCase):
         # Use real service for integration tests
         # Clear any existing dependency overrides
         app.dependency_overrides.clear()
+        
+        # Set up authentication mocks even for integration tests
+        AuthTestUtils.setup_auth_mocks(app)
 
     def tearDown(self):
         """Clean up after integration tests."""
@@ -604,6 +728,8 @@ class TestSFMAPIIntegration(unittest.TestCase):
             service.clear_all_data()
         except:
             pass  # Ignore cleanup errors
+        
+        app.dependency_overrides.clear()
 
     def test_end_to_end_actor_lifecycle(self):
         """Test complete actor lifecycle through API."""
@@ -646,6 +772,340 @@ class TestSFMAPIIntegration(unittest.TestCase):
         # Status should be a valid enum value
         valid_statuses = ["healthy", "degraded", "error"]
         self.assertIn(data["status"], valid_statuses)
+
+
+class TestSFMAPIAuthentication(unittest.TestCase):
+    """Test suite for authentication functionality."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = TestClient(app)
+        self.mock_service = Mock(spec=SFMService)
+        
+        # Mock service dependency
+        app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+        
+        # Don't set up auth mocks for authentication tests
+
+    def tearDown(self):
+        """Clean up after tests."""
+        app.dependency_overrides.clear()
+
+    def test_register_user_success(self):
+        """Test successful user registration."""
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "role": "user"
+        }
+        
+        response = self.client.post("/auth/register", json=user_data)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.json()
+        
+        self.assertEqual(data["username"], "testuser")
+        self.assertEqual(data["email"], "test@example.com")
+        self.assertEqual(data["role"], "user")
+        self.assertTrue(data["is_active"])
+
+    def test_register_user_duplicate_username(self):
+        """Test registration with duplicate username."""
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "role": "user"
+        }
+        
+        # First registration should succeed
+        response1 = self.client.post("/auth/register", json=user_data)
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+        
+        # Second registration with same username should fail
+        response2 = self.client.post("/auth/register", json=user_data)
+        self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_login_success(self):
+        """Test successful login."""
+        # First register a user
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "role": "user"
+        }
+        self.client.post("/auth/register", json=user_data)
+        
+        # Then login
+        login_data = {
+            "username": "testuser",
+            "password": "TestPass123!"
+        }
+        
+        response = self.client.post("/auth/login", json=login_data)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        
+        self.assertIn("access_token", data)
+        self.assertIn("refresh_token", data)
+        self.assertEqual(data["token_type"], "bearer")
+        self.assertIn("expires_in", data)
+
+    def test_login_invalid_credentials(self):
+        """Test login with invalid credentials."""
+        login_data = {
+            "username": "nonexistent",
+            "password": "wrongpassword"
+        }
+        
+        response = self.client.post("/auth/login", json=login_data)
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_protected_endpoint_without_auth(self):
+        """Test accessing protected endpoint without authentication."""
+        request_data = {
+            "name": "Test Actor",
+            "description": "Test description"
+        }
+        
+        response = self.client.post("/actors", json=request_data)
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_protected_endpoint_with_auth(self):
+        """Test accessing protected endpoint with authentication."""
+        # Register and login to get token
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "role": "user"
+        }
+        self.client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testuser",
+            "password": "TestPass123!"
+        }
+        login_response = self.client.post("/auth/login", json=login_data)
+        token = login_response.json()["access_token"]
+        
+        # Mock successful actor creation
+        mock_response = NodeResponse(
+            id=str(uuid.uuid4()),
+            label="Test Actor",
+            description="Test description",
+            node_type="Actor",
+            meta={},
+            created_at=datetime.now().isoformat()
+        )
+        self.mock_service.create_actor.return_value = mock_response
+        
+        # Test protected endpoint with token
+        headers = {"Authorization": f"Bearer {token}"}
+        request_data = {
+            "name": "Test Actor",
+            "description": "Test description"
+        }
+        
+        response = self.client.post("/actors", json=request_data, headers=headers)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_get_current_user_info(self):
+        """Test getting current user information."""
+        # Register and login
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "role": "user"
+        }
+        self.client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testuser",
+            "password": "TestPass123!"
+        }
+        login_response = self.client.post("/auth/login", json=login_data)
+        token = login_response.json()["access_token"]
+        
+        # Test current user endpoint
+        headers = {"Authorization": f"Bearer {token}"}
+        response = self.client.get("/auth/me", headers=headers)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        
+        self.assertEqual(data["username"], "testuser")
+        self.assertEqual(data["email"], "test@example.com")
+        self.assertEqual(data["role"], "user")
+
+    def test_get_user_permissions(self):
+        """Test getting user permissions."""
+        # Register and login
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "role": "user"
+        }
+        self.client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testuser",
+            "password": "TestPass123!"
+        }
+        login_response = self.client.post("/auth/login", json=login_data)
+        token = login_response.json()["access_token"]
+        
+        # Test permissions endpoint
+        headers = {"Authorization": f"Bearer {token}"}
+        response = self.client.get("/auth/permissions", headers=headers)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        
+        self.assertEqual(data["user"], "testuser")
+        self.assertEqual(data["role"], "user")
+        self.assertIn("permissions", data)
+        self.assertIn("read", data["permissions"])
+        self.assertIn("write", data["permissions"])
+
+    def test_role_based_access_control(self):
+        """Test role-based access control."""
+        # Register analyst user
+        analyst_data = {
+            "username": "analyst",
+            "email": "analyst@example.com",
+            "password": "AnalystPass123!",
+            "role": "analyst"
+        }
+        self.client.post("/auth/register", json=analyst_data)
+        
+        # Login as analyst
+        login_data = {
+            "username": "analyst",
+            "password": "AnalystPass123!"
+        }
+        login_response = self.client.post("/auth/login", json=login_data)
+        token = login_response.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # Mock analytics response
+        mock_analytics = CentralityAnalysis(
+            node_centrality={"node1": 0.5},
+            most_central_nodes=[("node1", 0.5)],
+            analysis_type="betweenness",
+            timestamp=datetime.now().isoformat()
+        )
+        self.mock_service.analyze_centrality.return_value = mock_analytics
+        
+        # Test analytics endpoint (should work for analyst)
+        response = self.client.get("/analytics/centrality", headers=headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Test write endpoint (should fail for analyst - read-only role)
+        request_data = {
+            "name": "Test Actor",
+            "description": "Test description"
+        }
+        response = self.client.post("/actors", json=request_data, headers=headers)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_invalid_token(self):
+        """Test access with invalid token."""
+        headers = {"Authorization": "Bearer invalid_token"}
+        response = self.client.get("/auth/me", headers=headers)
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_missing_token(self):
+        """Test access without token."""
+        response = self.client.get("/auth/me")
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class TestSFMAPISecurityIntegration(unittest.TestCase):
+    """Test suite for security integration with existing functionality."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = TestClient(app)
+        self.mock_service = Mock(spec=SFMService)
+        
+        # Mock service dependency
+        app.dependency_overrides[get_sfm_service_dependency] = lambda: self.mock_service
+
+    def tearDown(self):
+        """Clean up after tests."""
+        app.dependency_overrides.clear()
+
+    def test_auth_and_functionality_integration(self):
+        """Test that authentication works together with existing functionality."""
+        # Register and login
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "role": "user"
+        }
+        self.client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testuser",
+            "password": "TestPass123!"
+        }
+        login_response = self.client.post("/auth/login", json=login_data)
+        token = login_response.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # Test that authenticated user can access protected endpoints
+        mock_response = NodeResponse(
+            id=str(uuid.uuid4()),
+            label="Test Actor",
+            description="Test description",
+            node_type="Actor",
+            meta={},
+            created_at=datetime.now().isoformat()
+        )
+        self.mock_service.create_actor.return_value = mock_response
+        
+        request_data = {
+            "name": "Test Actor",
+            "description": "Test description"
+        }
+        
+        response = self.client.post("/actors", json=request_data, headers=headers)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_public_endpoints_still_work(self):
+        """Test that public endpoints still work without authentication."""
+        # Health endpoint should work without auth
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Root endpoint should work without auth
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Statistics endpoint should work without auth
+        mock_stats = GraphStatistics(
+            total_nodes=10,
+            total_relationships=15,
+            node_types={"Actor": 5, "Institution": 5},
+            relationship_kinds={"GOVERNS": 10, "INFLUENCES": 5},
+            timestamp=datetime.now().isoformat()
+        )
+        self.mock_service.get_statistics.return_value = mock_stats
+        
+        response = self.client.get("/statistics")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 if __name__ == "__main__":
