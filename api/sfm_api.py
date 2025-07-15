@@ -145,10 +145,21 @@ def check_rate_limit(request: Request) -> bool:
     
     # Check if limit exceeded
     if len(client_requests) >= RATE_LIMIT_REQUESTS:
+        # Generate appropriate error message based on rate limit window
+        if RATE_LIMIT_WINDOW == 3600:
+            period = "hour"
+            retry_after = str(RATE_LIMIT_WINDOW)
+        elif RATE_LIMIT_WINDOW == 60:
+            period = "minute"
+            retry_after = str(RATE_LIMIT_WINDOW)
+        else:
+            period = f"{RATE_LIMIT_WINDOW} seconds"
+            retry_after = str(RATE_LIMIT_WINDOW)
+        
         raise HTTPException(
             status_code=429,
-            detail=f"Rate limit exceeded. Maximum {RATE_LIMIT_REQUESTS} requests per minute allowed.",
-            headers={"Retry-After": "60"}
+            detail=f"Rate limit exceeded. Maximum {RATE_LIMIT_REQUESTS} requests per {period} allowed.",
+            headers={"Retry-After": retry_after}
         )
     
     # Add current request
