@@ -409,7 +409,14 @@ class InputValidator:
             r"(\bscript\b.*\>)",
             r"(\';.*--)",
             r"(\bor\b.*\b=\b.*\bor\b)",
-            r"(\band\b.*\b=\b.*\band\b)"
+            r"(\band\b.*\b=\b.*\band\b)",
+            # Additional patterns to catch more injection attempts
+            r"(\bor\b.*\b=\b.*\b=\b)",  # OR 1=1
+            r"(\bor\b.*\b'.*'.*\b=\b.*\b'.*')",  # OR '1'='1'
+            r"(\bor\b.*\b1\b.*\b=\b.*\b1\b)",  # OR 1=1
+            r"(.*'.*--)",  # admin'--
+            r"(\bor\b.*\b=\b.*--)",  # OR 1=1 --
+            r"('.*\bor\b.*'.*=.*')",  # 1' OR '1'='1' pattern
         ]
         
         text_lower = text.lower()

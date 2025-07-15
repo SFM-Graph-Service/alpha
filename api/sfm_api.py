@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 import logging
 import time
 from collections import defaultdict, deque
+from dataclasses import asdict
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -472,6 +473,7 @@ async def get_quick_analysis(service: SFMService = Depends(get_sfm_service_depen
     return result
 
 @app.get("/analytics/centrality", response_model=CentralityAnalysis, tags=["Analytics"])
+@limiter.limit("10/minute")
 async def analyze_centrality(
     request: Request,
     centrality_type: str = Query("betweenness", description="Type of centrality analysis"),
@@ -490,9 +492,6 @@ async def analyze_centrality(
     - degree: Identifies nodes with most connections
     - eigenvector: Identifies nodes connected to important nodes
     """
-    # Apply rate limiting
-    await limiter.limit("10/minute")(request)
-    
     return service.analyze_centrality(centrality_type, limit)
 
 @app.get("/analytics/policy-impact/{policy_id}", response_model=PolicyImpactAnalysis, tags=["Analytics"])
@@ -535,6 +534,7 @@ async def find_shortest_path(
 # ═══ ACTOR ENDPOINTS ═══
 
 @app.post("/actors", response_model=NodeResponse, status_code=status.HTTP_201_CREATED, tags=["Actors"])
+@limiter.limit("20/minute")
 async def create_actor(
     request: Request,
     actor_request: CreateActorRequest,
@@ -549,11 +549,8 @@ async def create_actor(
     Actors represent organizations, individuals, or groups that can take actions
     within the social fabric matrix.
     """
-    # Apply rate limiting
-    await limiter.limit("20/minute")(request)
-    
     # Sanitize input data
-    sanitized_data = input_validator.sanitize_input(actor_request.dict())
+    sanitized_data = input_validator.sanitize_input(asdict(actor_request))
     sanitized_request = CreateActorRequest(**sanitized_data)
     
     # Create actor with user context
@@ -565,6 +562,7 @@ async def create_actor(
     return result
 
 @app.get("/actors/{actor_id}", response_model=NodeResponse, tags=["Actors"])
+@limiter.limit("60/minute")
 async def get_actor(
     request: Request,
     actor_id: str = Path(..., description="UUID of the actor"),
@@ -572,9 +570,6 @@ async def get_actor(
     current_user: User = Depends(require_permission(Permission.READ))
 ):
     """Get a specific actor by ID. Requires READ permission."""
-    # Apply rate limiting
-    await limiter.limit("60/minute")(request)
-    
     try:
         actor_uuid = uuid.UUID(actor_id)
         actor = service.get_actor(actor_uuid)
@@ -604,6 +599,7 @@ async def get_actor_neighbors(
 # ═══ INSTITUTION ENDPOINTS ═══
 
 @app.post("/institutions", response_model=NodeResponse, status_code=status.HTTP_201_CREATED, tags=["Institutions"])
+@limiter.limit("20/minute")
 async def create_institution(
     request: Request,
     institution_request: CreateInstitutionRequest,
@@ -618,11 +614,8 @@ async def create_institution(
     Institutions represent formal structures, rules, and norms that govern
     behavior within the social fabric matrix.
     """
-    # Apply rate limiting
-    await limiter.limit("20/minute")(request)
-    
     # Sanitize input data
-    sanitized_data = input_validator.sanitize_input(institution_request.dict())
+    sanitized_data = input_validator.sanitize_input(asdict(institution_request))
     sanitized_request = CreateInstitutionRequest(**sanitized_data)
     
     # Create institution with user context
