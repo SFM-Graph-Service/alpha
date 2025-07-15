@@ -235,7 +235,7 @@ class AuthenticationManager:
     
     def authenticate_user(self, username: str, password: str) -> Optional[User]:
         """Authenticate user credentials."""
-        if username not in self.users:
+        if username not in self.users or username not in self.user_credentials:
             return None
         
         user = self.users[username]
