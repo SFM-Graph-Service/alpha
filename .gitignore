@@ -20,3 +20,7 @@ example-test-results/
 
 # Performance benchmark scripts (temporary)
 performance_benchmark.py
+
+# Analysis output files (regenerated on each run)
+core_analysis_data.json
+core_analysis_report.md
