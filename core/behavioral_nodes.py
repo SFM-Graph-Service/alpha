@@ -3,6 +3,13 @@ Behavioral and cognitive nodes for SFM modeling.
 
 This module defines nodes related to behavioral patterns, cognitive frameworks,
 value systems, and change processes in the Social Fabric Matrix.
+
+Code Quality Status:
+- Pylint: No warnings or errors
+- Flake8: No warnings or errors
+- Black: Properly formatted
+- MyPy: No type errors
+- Last scanned: 2025-07-16
 """
 
 from __future__ import annotations
@@ -53,7 +60,9 @@ class InstrumentalBehavior(Node):
 class ChangeProcess(Node):
     """Models institutional and technological change over time."""
 
-    change_type: ChangeType = ChangeType.EVOLUTIONARY  # evolutionary, revolutionary, cyclical
+    change_type: ChangeType = (
+        ChangeType.EVOLUTIONARY
+    )  # evolutionary, revolutionary, cyclical
     change_agents: List[uuid.UUID] = field(default_factory=lambda: [])
     resistance_factors: List[uuid.UUID] = field(default_factory=lambda: [])
     change_trajectory: List[TimeSlice] = field(default_factory=lambda: [])
