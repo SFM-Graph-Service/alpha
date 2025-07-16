@@ -209,7 +209,7 @@ class TestCacheDecorators(unittest.TestCase):
         self.assertEqual(result, 7)
         
         # Check that custom key was used
-        cached_result = self.cache.get_cached_result("add_function", "custom:3:4")
+        cached_result = self.cache._cache.get("custom:3:4")  # pylint: disable=protected-access
         self.assertEqual(cached_result, 7)
     
     def test_cached_operation_decorator(self):
