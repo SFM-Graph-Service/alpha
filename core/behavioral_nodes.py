@@ -6,7 +6,7 @@ value systems, and change processes in the Social Fabric Matrix.
 
 Code Quality Status:
 - Pylint: No warnings or errors
-- Flake8: No warnings or errors  
+- Flake8: No warnings or errors
 - Black: Properly formatted
 - MyPy: No type errors
 - Last scanned: 2025-07-16
