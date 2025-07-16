@@ -748,7 +748,7 @@ def cached(ttl: int = 3600, cache_key_func: Optional[Callable[..., str]] = None,
 
             # Try to get from cache
             with cache_metrics.time_operation(cache.name, "get"):
-                cached_result = cache.get_cached_result(func.__name__, cache_key)
+                cached_result = cache._cache.get(cache_key)  # pylint: disable=protected-access
                 if cached_result is not None:
                     cache_metrics.record_hit(cache.name, "decorator")
                     return cached_result
@@ -756,7 +756,7 @@ def cached(ttl: int = 3600, cache_key_func: Optional[Callable[..., str]] = None,
             # Execute function and cache result
             with cache_metrics.time_operation(cache.name, "set"):
                 result = func(*args, **kwargs)
-                cache.cache_result(func.__name__, result, ttl, cache_key)
+                cache._cache.set(cache_key, result, ttl)  # pylint: disable=protected-access
                 cache_metrics.record_miss(cache.name, "decorator")
                 return result
 
@@ -829,7 +829,7 @@ def cached_operation(cache: QueryCache, operation_name: str,
 
             # Execute function and cache result
             result = func(*args, **kwargs)
-            cache.cache_result(operation_name, result, ttl, *args, **kwargs)
+            cache.cache_result(operation_name, result, *args, ttl=ttl, **kwargs)
             return result
 
         return cast(F, wrapper)  # Ensure the return type matches the decorated function
