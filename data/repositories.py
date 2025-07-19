@@ -6,7 +6,7 @@ Default implementation uses NetworkX for in-memory graph storage.
 
 from abc import ABC, abstractmethod
 import uuid
-from typing import Dict, List, Optional, TypeVar, Generic, Type, Any, cast
+from typing import Optional, Any, List, Type, TypeVar, Generic, cast, Dict
 import networkx as nx
 from datetime import datetime, timedelta
 
@@ -158,7 +158,7 @@ class NetworkXSFMRepository(SFMRepository):
 
     def __init__(self):
         """Initialize the repository with an empty NetworkX graph."""
-        self.graph: nx.MultiDiGraph = nx.MultiDiGraph()
+        self.graph: nx.MultiDiGraph[uuid.UUID] = nx.MultiDiGraph()
 
     def create_node(self, node: Node) -> Node:
         """Create a new node in the repository."""
@@ -204,7 +204,7 @@ class NetworkXSFMRepository(SFMRepository):
 
     def list_nodes(self, node_type: Optional[Type[Node]] = None) -> List[Node]:
         """List all nodes, optionally filtered by type."""
-        result = []
+        result: List[Node] = []
 
         for node_id in self.graph.nodes:
             node = self.graph.nodes[node_id].get("data")
@@ -284,7 +284,7 @@ class NetworkXSFMRepository(SFMRepository):
         """List all relationships, optionally filtered by kind."""
         result = []
 
-        for u, _, _, data in self.graph.edges(data=True, keys=True):
+        for _, _, _, data in self.graph.edges(data=True, keys=True):
             rel = data.get("data")
             if rel is None:
                 continue
@@ -303,7 +303,7 @@ class NetworkXSFMRepository(SFMRepository):
         """Find relationships matching the specified criteria."""
         result = []
 
-        for u, v, key, data in self.graph.edges(data=True, keys=True):
+        for _, _, _, data in self.graph.edges(data=True, keys=True):
             rel = data.get("data")
             if rel is None:
                 continue
@@ -446,7 +446,7 @@ class TypedSFMRepository(Generic[T]):
             )
 
         result = self.base_repo.update_node(node)
-        return cast(T, result)
+        return result  # Ensure the return type matches the expected type
 
     def delete(self, node_id: uuid.UUID) -> bool:
         """Delete a node by its ID."""
@@ -461,7 +461,7 @@ class TypedSFMRepository(Generic[T]):
         """Query nodes based on attribute filters."""
         nodes = self.list_all()
 
-        result = []
+        result: List[T] = []
         for node in nodes:
             matches = True
             for attr, value in filters.items():

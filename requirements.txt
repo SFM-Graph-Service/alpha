@@ -18,3 +18,4 @@ redis
 prometheus-client
 PyYAML
 psutil
+types-networkx
