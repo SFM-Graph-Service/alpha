@@ -217,7 +217,7 @@ class TestPerformanceOptimizations(unittest.TestCase):
                 log_messages.append(record.getMessage())
         
         # Set up logging to capture warnings
-        logger = logging.getLogger('core.graph')
+        logger = logging.getLogger('graph.graph')
         test_handler = TestLogHandler()
         logger.addHandler(test_handler)
         logger.setLevel(logging.WARNING)
