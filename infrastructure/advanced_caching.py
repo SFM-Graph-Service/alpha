@@ -16,6 +16,7 @@ import time
 import threading
 import pickle
 import hashlib
+import random
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import nullcontext
@@ -619,12 +620,78 @@ class CacheWarmer:
             return
 
         try:
-            # Warm common graph statistics
+            logger.info("Starting common queries cache warming")
+            
+            # Warm common graph statistics (maintain backward compatibility)
             if hasattr(self.graph, 'get_node_count'):
                 self.graph.get_node_count()
 
             if hasattr(self.graph, 'get_relationship_count'):
                 self.graph.get_relationship_count()
+
+            # Warm node collection counts for each type
+            node_collections = [
+                'actors', 'institutions', 'resources', 'processes', 'flows',
+                'policies', 'belief_systems', 'technology_systems', 'indicators',
+                'feedback_loops', 'system_properties', 'analytical_contexts',
+                'policy_instruments', 'governance_structures', 'value_systems',
+                'ceremonial_behaviors', 'instrumental_behaviors', 'change_processes',
+                'cognitive_frameworks', 'behavioral_patterns', 'value_flows',
+                'network_metrics'
+            ]
+            
+            for collection_name in node_collections:
+                if hasattr(self.graph, collection_name):
+                    try:
+                        collection = getattr(self.graph, collection_name)
+                        # Trigger count operation to warm cache
+                        len(collection)
+                    except Exception as e:  # pylint: disable=broad-exception-caught
+                        logger.debug("Error warming collection %s: %s", collection_name, e)
+
+            # Warm commonly accessed graph properties and methods
+            common_methods = [
+                'get_all_node_ids',
+                'get_memory_usage', 
+                'get_memory_stats',
+                'get_cache_stats'
+            ]
+            
+            for method_name in common_methods:
+                if hasattr(self.graph, method_name):
+                    try:
+                        method = getattr(self.graph, method_name)
+                        if callable(method):
+                            method()
+                    except Exception as e:  # pylint: disable=broad-exception-caught
+                        logger.debug("Error warming method %s: %s", method_name, e)
+
+            # Warm frequently accessed relationships for central nodes
+            if hasattr(self.graph, 'get_node_relationships') and hasattr(self.graph, 'get_all_node_ids'):
+                try:
+                    all_node_ids = self.graph.get_all_node_ids()
+                    # Sample a few random nodes for relationship warming (limit to prevent performance issues)
+                    sample_size = min(10, len(all_node_ids)) if all_node_ids else 0
+                    if sample_size > 0:
+                        sample_nodes = random.sample(list(all_node_ids), sample_size)
+                        for node_id in sample_nodes:
+                            try:
+                                self.graph.get_node_relationships(node_id)
+                            except Exception as e:  # pylint: disable=broad-exception-caught
+                                logger.debug("Error warming relationships for node %s: %s", node_id, e)
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    logger.debug("Error in relationship warming: %s", e)
+
+            # Warm graph registry information if available
+            if hasattr(self.graph, '_node_registry'):
+                try:
+                    registry = self.graph._node_registry  # pylint: disable=protected-access
+                    if hasattr(registry, 'get_all_collection_names'):
+                        registry.get_all_collection_names()
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    logger.debug("Error warming node registry: %s", e)
+                    
+            logger.info("Common queries cache warming completed successfully")
 
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error warming common queries: %s", e)
