@@ -59,7 +59,7 @@ Built with modern software engineering practices, this framework provides a robu
 ## Installation
 
 ### Requirements
-- Python 3.8+
+- Python 3.9+ (as defined in setup.py)
 - NetworkX 3.0+
 - Neo4j (optional, for graph database backend)
 - Additional dependencies listed in requirements.txt
@@ -82,8 +82,8 @@ pip install -e .
 # Run the test suite to verify installation
 python -m unittest discover tests -v
 
-# Test with example
-python examples/us_grain_export_example.py
+# Test basic functionality
+python -c "from core.sfm_models import SFMGraph, Actor; print('Installation successful')"
 ```
 
 ## Quick Start
@@ -91,9 +91,9 @@ python examples/us_grain_export_example.py
 ### Basic Usage
 ```python
 from core.sfm_models import SFMGraph, Actor, Institution, Relationship
-from core.sfm_enums import RelationshipKind, InstitutionLayer
-from db.sfm_dao import SFMRepositoryFactory
-from core.sfm_query import SFMQueryFactory
+from models.sfm_enums import RelationshipKind, InstitutionLayer
+from data.repositories import SFMRepositoryFactory
+from graph.sfm_query import SFMQueryFactory
 
 # Create a repository with NetworkX backend
 repo = SFMRepositoryFactory.create_repository("networkx")
@@ -101,7 +101,7 @@ repo = SFMRepositoryFactory.create_repository("networkx")
 # Create entities with proper typing
 usda = Actor(label="USDA", sector="Government")
 farmers = Actor(label="Farmers Association", sector="Agriculture") 
-market = Institution(label="Commodity Market", layer=InstitutionLayer.FORMAL)
+market = Institution(label="Commodity Market", layer=InstitutionLayer.FORMAL_RULE)
 
 # Add to repository
 repo.create_node(usda)
@@ -113,8 +113,7 @@ regulation = Relationship(
     source_id=usda.id,
     target_id=farmers.id,
     kind=RelationshipKind.REGULATES,
-    weight=0.8,
-    description="USDA regulatory oversight of farming practices"
+    weight=0.8
 )
 repo.create_relationship(regulation)
 
@@ -134,7 +133,7 @@ print(f"Policy impact: {policy_impact}")
 
 ### Using the Service Layer
 ```python
-from core.sfm_service import SFMService, SFMServiceConfig
+from api.sfm_service import SFMService, SFMServiceConfig
 
 # Initialize service with configuration
 config = SFMServiceConfig(
@@ -146,7 +145,7 @@ service = SFMService(config)
 
 # Use high-level service operations
 actor_id = service.create_actor("USDA", "Government")
-institution_id = service.create_institution("Market", InstitutionLayer.FORMAL)
+institution_id = service.create_institution("Market", InstitutionLayer.FORMAL_RULE)
 
 # Create relationships through service
 service.create_relationship(
@@ -166,29 +165,39 @@ health = service.get_service_health()
 
 ```
 SFM-Graph-Service/
-├── core/                           # Core framework components
-│   ├── sfm_models.py              # Data model classes (Node, Actor, Institution, etc.)
-│   ├── sfm_query.py               # Query engine abstractions and NetworkX implementation
+├── core/                           # Unified import interface (backward compatibility)
+│   ├── sfm_models.py              # Main import module for all SFM data structures
+│   └── README.md                  # Core module documentation
+├── models/                         # Data model implementations
+│   ├── base_nodes.py              # Base Node class and infrastructure
+│   ├── core_nodes.py              # Primary SFM entities (Actor, Institution, etc.)
+│   ├── specialized_nodes.py       # Specialized components (TechnologySystem, etc.)
+│   ├── behavioral_nodes.py        # Behavioral and cognitive components
+│   ├── meta_entities.py           # Dimensional entities (TimeSlice, etc.)
+│   ├── relationships.py           # Graph relationships
 │   ├── sfm_enums.py               # Comprehensive enumeration definitions
-│   ├── sfm_service.py             # High-level service facade for simplified usage
+│   └── metadata_models.py         # Support and metadata classes
+├── graph/                         # Graph operations and analysis
+│   ├── graph.py                   # SFMGraph and NetworkMetrics classes
+│   ├── sfm_query.py               # Query engine abstractions and implementations
 │   └── sfm_persistence.py         # Graph persistence and serialization utilities
-├── db/                            # Data access layer
-│   └── sfm_dao.py                 # Repository pattern implementation (CRUD operations)
-├── examples/                      # Working examples and demonstrations
-│   ├── us_grain_export_example.py # Comprehensive grain market model
-│   └── us_grain_market_forecast.py # Market forecasting example
+├── api/                           # Service layer and API
+│   └── sfm_service.py             # High-level service facade for simplified usage
+├── data/                          # Data access and storage layer
+│   └── repositories.py           # Repository pattern implementation (CRUD operations)
+├── infrastructure/                # Infrastructure components
+│   └── security_validators.py     # Security and validation utilities
 ├── tests/                         # Comprehensive test suite
 │   ├── test_sfm_models.py         # Unit tests for data models
 │   ├── test_sfm_dao.py            # Unit tests for data access layer
 │   ├── test_sfm_query.py          # Unit tests for query engine
 │   ├── test_sfm_service.py        # Unit tests for service layer
-│   ├── test_enum_validation.py    # Tests for enum validation system
+│   └── test_enum_validation.py    # Tests for enum validation system
 ├── docs/                          # Documentation and design materials
 │   ├── sfm-overview.md            # Theoretical framework overview
 │   ├── SFMSuiteDesignProposal.md  # Comprehensive design documentation
-│   ├── enum_validation_guide.md   # Validation system documentation
-│   └── hayden_sfm_alignment.md    # SFM methodology alignment notes
-├── pyproject.toml                 # Modern Python project configuration
+│   └── sfmManifest.md             # Advanced service capabilities documentation
+├── pyproject.toml                 # Python project configuration
 ├── requirements.txt               # Production dependencies
 └── setup.py                      # Package installation configuration
 ```
@@ -278,18 +287,25 @@ The framework includes comprehensive validation systems:
 
 ## Testing
 
-The framework includes comprehensive test coverage with 491 passing tests:
+The framework includes comprehensive test coverage with 500+ tests:
 
 ```bash
-# Run all tests
+# Run all tests (requires all dependencies from requirements.txt)
 python -m unittest discover tests -v
 
 # Run specific test modules
 python -m unittest tests.test_sfm_models -v
 python -m unittest tests.test_sfm_dao -v
 python -m unittest tests.test_sfm_query -v
-python -m unittest tests.test_sfm_service -v
-python -m unittest tests.test_enum_validation -v
+
+# Run tests with coverage
+pytest tests/ --cov=. --cov-report=html
+```
+
+**Note**: Some advanced tests require additional dependencies (Redis, pytest, etc.). Install all requirements with:
+```bash
+pip install -r requirements.txt
+```
 
 
 ### Test Categories
@@ -376,8 +392,11 @@ All workflows are configured to run on:
 - **[Enum Validation Guide](docs/enum_validation_guide.md)**: Comprehensive guide to validation system usage
 
 ### Module Documentation
-- **[Core Module](core/README.md)**: Data models, query engine, and service layer documentation
-- **[Database Module](db/README.md)**: Repository patterns, type-safe operations, and storage backends
+- **[Core Module](core/README.md)**: Unified import interface and backward compatibility layer
+- **[Models Documentation](models/)**: Data model implementations and entity classes
+- **[Graph Operations](graph/)**: Graph structure, query engine, and persistence
+- **[API Service Layer](api/)**: High-level service facade and configuration
+- **[Data Access Layer](data/README.md)**: Repository patterns, type-safe operations, and storage backends
 
 ### Theoretical Foundation
 
@@ -443,8 +462,8 @@ pip install -e .
 # Run tests to verify setup
 python -m unittest discover tests -v
 
-# Run example to verify functionality
-python examples/us_grain_export_example.py
+# Test basic functionality
+python -c "from core.sfm_models import SFMGraph, Actor; print('Setup verified')"
 ```
 
 ### Development Guidelines

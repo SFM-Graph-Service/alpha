@@ -1,6 +1,32 @@
-# SFM-Graph-Service: `db` Module
+# SFM-Graph-Service: `data` Directory
+
+This directory contains the data access layer and storage utilities for the Social Fabric Matrix (SFM) framework.
+
+## Contents
+
+- **`repositories.py`** - Abstract data access layer implementation with repository patterns for SFM graph data
+- **Other data files and storage utilities** (as needed)
+
+## Key Module: `repositories.py`
 
 This module implements an abstract data access layer for Social Fabric Matrix (SFM) graph data, supporting flexible storage backends (default: in-memory with NetworkX).
+
+---
+
+## Table of Contents
+- [Overview](#overview)
+- [Core Repository Interfaces](#core-repository-interfaces)
+  - [SFMRepository (abstract)](#sfmrepository-abstract)
+  - [NetworkXSFMRepository](#networkxsfmrepository)
+- [Type-Safe Repositories](#type-safe-repositories)
+  - [TypedSFMRepository](#typedsfmrepository)
+  - [ActorRepository](#actorrepository)
+  - [InstitutionRepository](#institutionrepository)
+  - [PolicyRepository](#policyrepository)
+  - [ResourceRepository](#resourcerepository)
+  - [RelationshipRepository](#relationshiprepository)
+- [Repository Factory](#repository-factory)
+- [Usage Example](#usage-example)
 
 ---
 
@@ -149,7 +175,7 @@ The `db` module provides an extensible and type-safe way to interact with SFM gr
 ## Usage Example
 
 ```python
-from db.sfm_dao import SFMRepositoryFactory
+from data.repositories import SFMRepositoryFactory
 
 # Create an in-memory repository for actors
 actor_repo = SFMRepositoryFactory.create_actor_repository()
