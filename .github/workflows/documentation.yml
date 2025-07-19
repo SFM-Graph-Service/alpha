@@ -32,7 +32,7 @@ jobs:
       - name: Check docstring style with pydocstyle
         run: |
           if command -v pydocstyle &> /dev/null; then
-            pydocstyle core/ db/ --convention=google --count > pydocstyle-report.txt 2>&1 || true
+            pydocstyle models/ api/ graph/ data/ infrastructure/ utils/ core/ db/ --convention=google --count > pydocstyle-report.txt 2>&1 || true
           else
             echo "pydocstyle not available, skipping docstring style check" > pydocstyle-report.txt
           fi
@@ -41,7 +41,7 @@ jobs:
       - name: Check docstring coverage with interrogate
         run: |
           if command -v interrogate &> /dev/null; then
-            interrogate core/ db/ --verbose --ignore-init-method \
+            interrogate models/ api/ graph/ data/ infrastructure/ utils/ core/ db/ --verbose --ignore-init-method \
                        --ignore-magic --ignore-module --ignore-private \
                        > interrogate-report.txt 2>&1 || true
           else
@@ -143,7 +143,7 @@ jobs:
           
           def check_enum_documentation():
               """Check if enums have consistent documentation."""
-              enum_file = "core/sfm_enums.py"
+              enum_file = "models/sfm_enums.py"
               issues = []
               
               if not os.path.exists(enum_file):
@@ -197,12 +197,25 @@ jobs:
           
           # Check if README mentions all main modules
           echo "Checking if README mentions core modules..." >> readme-consistency-report.txt
-          MODULES=("sfm_models" "sfm_enums" "sfm_service" "sfm_dao" "sfm_query")
-          for module in "${MODULES[@]}"; do
+          OLD_MODULES=("sfm_models" "sfm_enums" "sfm_service" "sfm_dao" "sfm_query")
+          NEW_MODULES=("models" "api" "graph" "data" "infrastructure" "utils")
+          
+          echo "Checking old module references (backward compatibility)..." >> readme-consistency-report.txt
+          for module in "${OLD_MODULES[@]}"; do
               if grep -q "$module" README.md; then
                   echo "✓ $module mentioned in README" >> readme-consistency-report.txt
               else
                   echo "✗ $module NOT mentioned in README" >> readme-consistency-report.txt
+              fi
+          done
+          
+          echo "" >> readme-consistency-report.txt
+          echo "Checking new module structure references..." >> readme-consistency-report.txt
+          for module in "${NEW_MODULES[@]}"; do
+              if grep -q "$module" README.md; then
+                  echo "✓ $module directory mentioned in README" >> readme-consistency-report.txt
+              else
+                  echo "✗ $module directory NOT mentioned in README" >> readme-consistency-report.txt
               fi
           done
           
