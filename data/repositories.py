@@ -162,15 +162,18 @@ class NetworkXSFMRepository(SFMRepository):
 
     def create_node(self, node: Node) -> Node:
         """Create a new node in the repository."""
-        if node.id in self.graph:
+        # Type hint for clarity
+        node_id: uuid.UUID = node.id
+        
+        if node_id in self.graph:
             raise NodeCreationError(
-                f"Node with ID {node.id} already exists",
+                f"Node with ID {node_id} already exists",
                 node_type=type(node).__name__,
-                node_id=node.id
+                node_id=node_id
             )
 
         # Add node to graph with its full data
-        self.graph.add_node(node.id, data=node)
+        self.graph.add_node(node_id, data=node)  # type: ignore[misc]
         return node
 
     def read_node(self, node_id: uuid.UUID) -> Optional[Node]:
@@ -218,62 +221,70 @@ class NetworkXSFMRepository(SFMRepository):
 
     def create_relationship(self, rel: Relationship) -> Relationship:
         """Create a new relationship in the repository."""
+        # Type hints for clarity
+        source_id: uuid.UUID = rel.source_id
+        target_id: uuid.UUID = rel.target_id
+        rel_id: uuid.UUID = rel.id
+        
         # Verify source and target nodes exist
-        if rel.source_id not in self.graph:
+        if source_id not in self.graph:
             raise SFMNotFoundError(
                 entity_type="Node",
-                entity_id=rel.source_id
+                entity_id=source_id
             )
-        if rel.target_id not in self.graph:
+        if target_id not in self.graph:
             raise SFMNotFoundError(
                 entity_type="Node", 
-                entity_id=rel.target_id
+                entity_id=target_id
             )
 
         # Check if relationship already exists
-        for _, _, key, _ in self.graph.edges(data=True, keys=True):
-            if key == rel.id:
+        for _, _, key, _ in self.graph.edges(data=True, keys=True):  # type: ignore[misc]
+            if key == rel_id:
                 raise RelationshipValidationError(
-                    f"Relationship with ID {rel.id} already exists",
-                    source_id=rel.source_id,
-                    target_id=rel.target_id,
+                    f"Relationship with ID {rel_id} already exists",
+                    source_id=source_id,
+                    target_id=target_id,
                     relationship_kind=str(rel.kind.value) if rel.kind else None
                 )
 
         # Add relationship to graph as an edge with its data
-        self.graph.add_edge(rel.source_id, rel.target_id, key=rel.id, data=rel)
+        self.graph.add_edge(source_id, target_id, key=rel_id, data=rel)  # type: ignore[misc]
         return rel
 
     def read_relationship(self, rel_id: uuid.UUID) -> Optional[Relationship]:
         """Read a relationship by its ID."""
         # Search for the relationship in edges
-        for _, _, key, data in self.graph.edges(data=True, keys=True):
+        for _, _, key, data in self.graph.edges(data=True, keys=True):  # type: ignore[misc]
             if key == rel_id:
-                return data.get("data")
+                return data.get("data")  # type: ignore[return-value]
 
         return None
 
     def update_relationship(self, rel: Relationship) -> Relationship:
         """Update an existing relationship."""
+        # Type hints for clarity
+        rel_id: uuid.UUID = rel.id
+        
         # Find the relationship by ID
-        for u, v, key in self.graph.edges(keys=True):
-            if key == rel.id:
+        for u, v, key in self.graph.edges(keys=True):  # type: ignore[misc]
+            if key == rel_id:
                 # Update the relationship data
-                self.graph[u][v][key]["data"] = rel
+                self.graph[u][v][key]["data"] = rel  # type: ignore[misc]
                 return rel
 
         raise SFMNotFoundError(
             entity_type="Relationship",
-            entity_id=rel.id
+            entity_id=rel_id
         )
 
     def delete_relationship(self, rel_id: uuid.UUID) -> bool:
         """Delete a relationship by its ID."""
         # Find the relationship by ID
-        for u, v, key in self.graph.edges(keys=True):
+        for u, v, key in self.graph.edges(keys=True):  # type: ignore[misc]
             if key == rel_id:
                 # Remove the edge
-                self.graph.remove_edge(u, v, key=key)
+                self.graph.remove_edge(u, v, key=key)  # type: ignore[misc]
                 return True
 
         return False
@@ -282,9 +293,9 @@ class NetworkXSFMRepository(SFMRepository):
         self, kind: Optional[RelationshipKind] = None
     ) -> List[Relationship]:
         """List all relationships, optionally filtered by kind."""
-        result = []
+        result: List[Relationship] = []
 
-        for _, _, _, data in self.graph.edges(data=True, keys=True):
+        for _, _, _, data in self.graph.edges(data=True, keys=True):  # type: ignore[misc]
             rel = data.get("data")
             if rel is None:
                 continue
@@ -301,9 +312,9 @@ class NetworkXSFMRepository(SFMRepository):
         kind: Optional[RelationshipKind] = None,
     ) -> List[Relationship]:
         """Find relationships matching the specified criteria."""
-        result = []
+        result: List[Relationship] = []
 
-        for _, _, _, data in self.graph.edges(data=True, keys=True):
+        for _, _, _, data in self.graph.edges(data=True, keys=True):  # type: ignore[misc]
             rel = data.get("data")
             if rel is None:
                 continue
@@ -348,7 +359,7 @@ class NetworkXSFMRepository(SFMRepository):
 
     def find_relationships_by_time(self, time_slice: TimeSlice) -> List[Relationship]:
         """Find relationships associated with a specific time slice."""
-        result = []
+        result: List[Relationship] = []
 
         for rel in self.list_relationships():
             if rel.time == time_slice:
@@ -360,7 +371,7 @@ class NetworkXSFMRepository(SFMRepository):
         self, spatial_unit: SpatialUnit
     ) -> List[Relationship]:
         """Find relationships associated with a specific spatial unit."""
-        result = []
+        result: List[Relationship] = []
 
         for rel in self.list_relationships():
             if rel.space == spatial_unit:
