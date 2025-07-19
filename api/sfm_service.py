@@ -21,7 +21,7 @@ Usage Examples:
 
 Direct Python Usage:
 ```python
-from core.sfm_service import SFMService
+from api.sfm_service import SFMService
 
 service = SFMService()
 actor = service.create_actor(name="USDA", sector="government")
@@ -32,7 +32,7 @@ analysis = service.analyze_centrality()
 
 Direct Usage:
 ```python
-from core.sfm_service import SFMService
+from api.sfm_service import SFMService
 
 service = SFMService()
 
@@ -55,7 +55,7 @@ from typing import Dict, List, Optional, Any, Union, Tuple, Type, TypeVar
 import networkx as nx
 
 # Local imports
-from core.sfm_models import (
+from models import (
     Node,
     Actor,
     Institution,
@@ -64,11 +64,11 @@ from core.sfm_models import (
     Flow,
     Relationship,
     Policy,
-    SFMGraph,
 )
-from core.sfm_enums import ResourceType, RelationshipKind
-from core.sfm_query import SFMQueryEngine, NetworkXSFMQueryEngine
-from core.exceptions import (
+from graph import SFMGraph
+from models.sfm_enums import ResourceType, RelationshipKind
+from graph.sfm_query import SFMQueryEngine, NetworkXSFMQueryEngine
+from models.exceptions import (
     SFMError,
     SFMValidationError,
     SFMNotFoundError,
@@ -86,21 +86,21 @@ from core.exceptions import (
 )
 from config.config_manager import get_config, SFMConfig
 from config.secrets_manager import SecretsManagerFactory
-from core.security_validators import (
+from infrastructure.security_validators import (
     validate_and_sanitize_node_data,
     SecurityValidationError,
 )
-from core.transaction_manager import TransactionManager
-from core.audit_logger import (
+from infrastructure.transaction_manager import TransactionManager
+from infrastructure.audit_logger import (
     AuditLogger, audit_operation, OperationType as AuditOperationType,
     AuditLevel, get_audit_logger
 )
-from core.performance_metrics import (
+from infrastructure.performance_metrics import (
     MetricsCollector, get_metrics_collector, timed_operation
 )
-from core.lock_manager import get_lock_manager, LockType
-from core.patterns.command import CommandManager, AddNodeCommand, AddRelationshipCommand
-from db.sfm_dao import (
+from infrastructure.lock_manager import get_lock_manager, LockType
+from utils.patterns.command import CommandManager, AddNodeCommand, AddRelationshipCommand
+from data.repositories import (
     SFMRepositoryFactory,
     ActorRepository,
     InstitutionRepository,

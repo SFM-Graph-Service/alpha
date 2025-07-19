@@ -15,9 +15,9 @@ from datetime import datetime
 from pathlib import Path
 from enum import Enum
 
-from core.base_nodes import Node
-from core.relationships import Relationship
-from core.sfm_enums import RelationshipKind
+from models.base_nodes import Node
+from models.relationships import Relationship
+from models.sfm_enums import RelationshipKind
 
 
 class PluginStatus(Enum):

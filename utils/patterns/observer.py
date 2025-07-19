@@ -10,8 +10,8 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from core.base_nodes import Node
-from core.relationships import Relationship
+from models.base_nodes import Node
+from models.relationships import Relationship
 
 
 class GraphChangeObserver(ABC):

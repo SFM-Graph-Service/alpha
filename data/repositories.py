@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, TypeVar, Generic, Type, Any, cast
 import networkx as nx
 from datetime import datetime, timedelta
 
-from core.sfm_models import (
+from models import (
     Node,
     Actor,
     Institution,
@@ -25,13 +25,13 @@ from core.sfm_models import (
     FeedbackLoop,
     AnalyticalContext,
     SystemProperty,
-    SFMGraph,
     TimeSlice,
     SpatialUnit,
 )
+from graph import SFMGraph
 
-from core.sfm_enums import ResourceType, InstitutionLayer, ValueCategory,RelationshipKind
-from core.exceptions import (
+from models.sfm_enums import ResourceType, InstitutionLayer, ValueCategory,RelationshipKind
+from models.exceptions import (
     SFMError,
     SFMValidationError,
     SFMNotFoundError,

@@ -14,25 +14,25 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Iterator, Callable, Set, Type, Tuple, Any
 from datetime import datetime
 
-from core.base_nodes import Node
-from core.core_nodes import (
+from models.base_nodes import Node
+from models.core_nodes import (
     Actor, Institution, Policy, Resource, Process, Flow, ValueFlow, GovernanceStructure
 )
-from core.specialized_nodes import (
+from models.specialized_nodes import (
     BeliefSystem, TechnologySystem, Indicator, FeedbackLoop, SystemProperty,
     AnalyticalContext, PolicyInstrument
 )
-from core.behavioral_nodes import (
+from models.behavioral_nodes import (
     ValueSystem, CeremonialBehavior, InstrumentalBehavior, ChangeProcess,
     CognitiveFramework, BehavioralPattern
 )
-from core.relationships import Relationship
-from core.metadata_models import ModelMetadata, ValidationRule
-from core.sfm_enums import EnumValidator
-from core.memory_management import MemoryMonitor, MemoryUsageStats, EvictionStrategy, EvictableGraph
-from core.advanced_caching import QueryCache
-from core.patterns.observer import GraphObservable
-from core.performance_metrics import timed_operation
+from models.relationships import Relationship
+from models.metadata_models import ModelMetadata, ValidationRule
+from models.sfm_enums import EnumValidator
+from infrastructure.memory_management import MemoryMonitor, MemoryUsageStats, EvictionStrategy, EvictableGraph
+from infrastructure.advanced_caching import QueryCache
+from utils.patterns.observer import GraphObservable
+from infrastructure.performance_metrics import timed_operation
 
 # Set up logger for lazy loading operations
 logger = logging.getLogger(__name__)

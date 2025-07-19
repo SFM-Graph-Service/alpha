@@ -24,7 +24,7 @@ from functools import wraps
 from dataclasses import dataclass, field
 
 # Import existing audit logging for integration
-from core.audit_logger import AuditLogger, AuditLevel, OperationType
+from infrastructure.audit_logger import AuditLogger, AuditLevel, OperationType
 
 
 @dataclass
