@@ -17,3 +17,4 @@ redis
 redis
 prometheus-client
 PyYAML
+psutil
