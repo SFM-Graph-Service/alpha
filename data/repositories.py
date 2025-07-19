@@ -32,19 +32,10 @@ from graph import SFMGraph
 
 from models.sfm_enums import ResourceType, InstitutionLayer, ValueCategory,RelationshipKind
 from models.exceptions import (
-    SFMError,
     SFMValidationError,
     SFMNotFoundError,
-    SFMIntegrityError,
     NodeCreationError,
-    NodeUpdateError,
-    NodeDeleteError,
     RelationshipValidationError,
-    DatabaseError,
-    ErrorContext,
-    create_not_found_error,
-    create_validation_error,
-    create_node_creation_error,
 )
 
 T = TypeVar("T", bound=Node)
@@ -167,7 +158,7 @@ class NetworkXSFMRepository(SFMRepository):
 
     def __init__(self):
         """Initialize the repository with an empty NetworkX graph."""
-        self.graph = nx.MultiDiGraph()
+        self.graph: nx.MultiDiGraph = nx.MultiDiGraph()
 
     def create_node(self, node: Node) -> Node:
         """Create a new node in the repository."""
@@ -240,13 +231,13 @@ class NetworkXSFMRepository(SFMRepository):
             )
 
         # Check if relationship already exists
-        for _, _, key, data in self.graph.edges(data=True, keys=True):
+        for _, _, key, _ in self.graph.edges(data=True, keys=True):
             if key == rel.id:
                 raise RelationshipValidationError(
                     f"Relationship with ID {rel.id} already exists",
                     source_id=rel.source_id,
                     target_id=rel.target_id,
-                    relationship_kind=rel.kind.value if rel.kind else None
+                    relationship_kind=str(rel.kind.value) if rel.kind else None
                 )
 
         # Add relationship to graph as an edge with its data
@@ -256,7 +247,7 @@ class NetworkXSFMRepository(SFMRepository):
     def read_relationship(self, rel_id: uuid.UUID) -> Optional[Relationship]:
         """Read a relationship by its ID."""
         # Search for the relationship in edges
-        for u, v, key, data in self.graph.edges(data=True, keys=True):
+        for _, _, key, data in self.graph.edges(data=True, keys=True):
             if key == rel_id:
                 return data.get("data")
 
@@ -293,7 +284,7 @@ class NetworkXSFMRepository(SFMRepository):
         """List all relationships, optionally filtered by kind."""
         result = []
 
-        for u, v, key, data in self.graph.edges(data=True, keys=True):
+        for u, _, _, data in self.graph.edges(data=True, keys=True):
             rel = data.get("data")
             if rel is None:
                 continue
@@ -436,7 +427,7 @@ class TypedSFMRepository(Generic[T]):
             )
 
         result = self.base_repo.create_node(node)
-        return cast(T, result)
+        return result
 
     def read(self, node_id: uuid.UUID) -> Optional[T]:
         """Read a node by its ID."""
@@ -445,7 +436,7 @@ class TypedSFMRepository(Generic[T]):
         if result is None or not isinstance(result, self.node_type):
             return None
 
-        return cast(T, result)
+        return result
 
     def update(self, node: T) -> T:
         """Update an existing node."""
@@ -585,7 +576,7 @@ class FlowRepository(TypedSFMRepository[Flow]):
 
     def find_by_nature(self, nature: str) -> List[Flow]:
         """Find flows by nature (input, output, transfer)."""
-        return [f for f in self.list_all() if f.nature.value == nature]
+        return [f for f in self.list_all() if str(f.nature.value) == nature]
 
     def find_by_quantity_range(self, min_qty: float, max_qty: float) -> List[Flow]:
         """Find flows within quantity range."""
@@ -701,7 +692,7 @@ class FeedbackLoopRepository(TypedSFMRepository[FeedbackLoop]):
 
     def find_by_polarity(self, polarity: str) -> List[FeedbackLoop]:
         """Find feedback loops by polarity."""
-        return [f for f in self.list_all() if f.polarity == polarity]
+        return [f for f in self.list_all() if f.polarity and f.polarity.value == int(polarity)]
 
     def find_by_strength_range(
         self, min_strength: float, max_strength: float
@@ -728,7 +719,7 @@ class SystemPropertyRepository(TypedSFMRepository[SystemProperty]):
 
     def find_by_property_type(self, property_type: str) -> List[SystemProperty]:
         """Find system properties by type."""
-        return [s for s in self.list_all() if s.property_type == property_type]
+        return [s for s in self.list_all() if str(s.property_type) == property_type]
 
     def find_affecting_node(self, node_id: uuid.UUID) -> List[SystemProperty]:
         """Find system properties affecting a specific node."""
