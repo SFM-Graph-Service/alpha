@@ -10,9 +10,9 @@ import uuid
 import unittest
 from typing import List
 
-from core.graph import SFMGraph
-from core.core_nodes import Actor
-from core.relationships import Relationship
+from graph.graph import SFMGraph
+from models.core_nodes import Actor
+from models.relationships import Relationship
 
 
 class TestPerformanceOptimizations(unittest.TestCase):
@@ -217,7 +217,7 @@ class TestPerformanceOptimizations(unittest.TestCase):
                 log_messages.append(record.getMessage())
         
         # Set up logging to capture warnings
-        logger = logging.getLogger('core.graph')
+        logger = logging.getLogger('graph.graph')
         test_handler = TestLogHandler()
         logger.addHandler(test_handler)
         logger.setLevel(logging.WARNING)

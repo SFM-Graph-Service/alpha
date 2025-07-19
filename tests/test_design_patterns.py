@@ -9,31 +9,31 @@ import uuid
 from datetime import datetime
 from unittest.mock import Mock, MagicMock
 
-from core.patterns.observer import (
+from utils.patterns.observer import (
     GraphChangeObserver, GraphObservable, CachingObserver, MetricsObserver
 )
-from core.patterns.command import (
+from utils.patterns.command import (
     Command, CommandManager, AddNodeCommand, RemoveNodeCommand,
     AddRelationshipCommand, MacroCommand
 )
-from core.patterns.strategy import (
+from utils.patterns.strategy import (
     CentralityStrategy, BetweennessCentralityStrategy, EigenvectorCentralityStrategy,
     StrategyManager, CentralityAnalyzer
 )
-from core.patterns.decorator import (
+from utils.patterns.decorator import (
     ValidationDecorator, CacheDecorator, AuditDecorator, ValidationError,
     cache_result, audit_operation, validate_inputs
 )
-from core.patterns.event_bus import (
+from utils.patterns.event_bus import (
     Event, EventHandler, EventBus, LoggingEventHandler, MetricsEventHandler
 )
-from core.patterns.dependency_injection import (
+from utils.patterns.dependency_injection import (
     DIContainer, LifecycleType, ServiceScope, InjectionError, CircularDependencyError
 )
 
-from core.base_nodes import Node
-from core.relationships import Relationship
-from core.sfm_enums import RelationshipKind
+from models.base_nodes import Node
+from models.relationships import Relationship
+from models.sfm_enums import RelationshipKind
 
 
 class TestObserverPattern:
@@ -368,7 +368,7 @@ class TestDecoratorPattern:
     
     def test_audit_decorator(self):
         """Test audit decorator functionality."""
-        from core.patterns.decorator import AuditLogger, AuditLevel
+        from utils.patterns.decorator import AuditLogger, AuditLevel
         
         audit_logger = AuditLogger()
         

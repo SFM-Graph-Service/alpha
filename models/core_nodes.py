@@ -11,10 +11,10 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from core.base_nodes import Node
-from core.meta_entities import TimeSlice, SpatialUnit, Scenario
-from core.metadata_models import TemporalDynamics
-from core.sfm_enums import (
+from models.base_nodes import Node
+from models.meta_entities import TimeSlice, SpatialUnit, Scenario
+from models.metadata_models import TemporalDynamics
+from models.sfm_enums import (
     InstitutionLayer,
     ResourceType,
     FlowNature,

@@ -12,20 +12,20 @@ import uuid
 from pathlib import Path
 from datetime import datetime
 
-from core.sfm_persistence import (
-    SFMPersistenceManager, 
+from graph.sfm_persistence import (
     SFMGraphSerializer, 
+    SFMPersistenceManager,
     StorageFormat, 
     PersistenceConfig,
     save_sfm_graph,
     load_sfm_graph,
     list_sfm_graphs
 )
-from core.sfm_models import (
-    SFMGraph, Actor, Institution, Resource, Process, Flow, 
+from models import ( Actor, Institution, Resource, Process, Flow, 
     Policy, Relationship
 )
-from core.sfm_enums import ResourceType, RelationshipKind, InstitutionLayer
+from models.sfm_enums import ResourceType, RelationshipKind, InstitutionLayer
+from graph.graph import SFMGraph
 
 
 class TestSFMPersistence(unittest.TestCase):

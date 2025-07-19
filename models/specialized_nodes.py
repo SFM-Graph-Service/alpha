@@ -12,9 +12,9 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
-from core.base_nodes import Node
-from core.metadata_models import TemporalDynamics, ValidationRule
-from core.sfm_enums import (
+from models.base_nodes import Node
+from models.metadata_models import TemporalDynamics, ValidationRule
+from models.sfm_enums import (
     FeedbackPolarity,
     FeedbackType,
     TechnologyReadinessLevel,

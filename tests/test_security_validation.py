@@ -9,7 +9,7 @@ import unittest
 import uuid
 from unittest.mock import patch, MagicMock
 
-from core.security_validators import (
+from infrastructure.security_validators import (
     sanitize_string,
     sanitize_description,
     validate_metadata,
@@ -25,7 +25,7 @@ from core.security_validators import (
     MAX_METADATA_KEYS,
     MAX_METADATA_VALUE_LENGTH,
 )
-from core.sfm_service import SFMService, SFMValidationError, SFMError
+from api.sfm_service import SFMService, SFMValidationError, SFMError
 
 
 class TestSecurityValidators(unittest.TestCase):

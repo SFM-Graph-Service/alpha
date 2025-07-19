@@ -23,8 +23,8 @@ from contextlib import contextmanager
 import threading
 from collections import defaultdict, deque
 
-from core.logging_config import get_logger
-from core.performance_metrics import MetricsCollector as CoreMetricsCollector, MetricType
+from infrastructure.logging_config import get_logger
+from infrastructure.performance_metrics import MetricsCollector as CoreMetricsCollector, MetricType
 
 # Optional Prometheus metrics import
 try:

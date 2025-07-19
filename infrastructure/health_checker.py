@@ -22,7 +22,7 @@ from enum import Enum
 import threading
 from contextlib import contextmanager
 
-from core.logging_config import get_logger
+from infrastructure.logging_config import get_logger
 
 
 class HealthStatus(Enum):

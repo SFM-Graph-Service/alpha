@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Type, List
 from enum import Enum
-from core.sfm_models import (
+from models import (
     TimeSlice,
     SpatialUnit,
     Scenario,
@@ -17,7 +17,6 @@ from core.sfm_models import (
     Process,
     Flow,
     Relationship,
-    SFMGraph,
     BeliefSystem,
     Policy,
     TechnologySystem,
@@ -36,9 +35,8 @@ from core.sfm_models import (
     TemporalDynamics,
     ValidationRule,
     ModelMetadata,
-    NetworkMetrics,
 )
-from core.sfm_enums import (
+from models.sfm_enums import (
     LegitimacySource,
     TechnologyReadinessLevel,
     ValueCategory,
@@ -56,6 +54,7 @@ from core.sfm_enums import (
     FeedbackType,
     SystemPropertyType,
 )
+from graph.graph import SFMGraph, NetworkMetrics
 from typing import Type
 from enum import Enum
 

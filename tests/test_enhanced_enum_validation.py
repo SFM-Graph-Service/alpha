@@ -7,7 +7,7 @@ cross-enum dependencies, and required enum context validation.
 """
 
 import unittest
-from core.sfm_enums import (
+from models.sfm_enums import (
     IncompatibleEnumError,
     InvalidEnumOperationError,
     EnumValidator,

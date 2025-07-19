@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
-from core.meta_entities import TimeSlice
-from core.sfm_enums import TemporalFunctionType, ValidationRuleType
+from models.meta_entities import TimeSlice
+from models.sfm_enums import TemporalFunctionType, ValidationRuleType
 
 
 @dataclass

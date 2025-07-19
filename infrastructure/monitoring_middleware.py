@@ -22,8 +22,8 @@ from starlette.responses import Response
 from starlette.types import ASGIApp
 import json
 
-from core.logging_config import get_logger, LoggingManager
-from core.metrics import get_metrics_collector
+from infrastructure.logging_config import get_logger, LoggingManager
+from infrastructure.metrics import get_metrics_collector
 
 
 class MonitoringMiddleware(BaseHTTPMiddleware):

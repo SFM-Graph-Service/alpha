@@ -11,11 +11,11 @@ import unittest
 from typing import List
 from unittest.mock import Mock, patch
 
-from core.graph import SFMGraph
-from core.core_nodes import Actor, Institution
-from core.relationships import Relationship
-from core.memory_management import MemoryMonitor, EvictionStrategy, MemoryUsageStats
-from core.advanced_caching import QueryCache, MemoryCache, TTLMemoryCache
+from graph.graph import SFMGraph
+from models.core_nodes import Actor, Institution
+from models.relationships import Relationship
+from infrastructure.memory_management import MemoryMonitor, EvictionStrategy, MemoryUsageStats
+from infrastructure.advanced_caching import QueryCache, MemoryCache, TTLMemoryCache
 
 
 class TestAdvancedPerformanceOptimizations(unittest.TestCase):
@@ -233,15 +233,15 @@ class TestAdvancedPerformanceOptimizations(unittest.TestCase):
             self.graph.get_node_by_id(node.id)
         
         # Get performance metrics
-        from core.performance_metrics import get_metrics_collector
+        from infrastructure.performance_metrics import get_metrics_collector
         collector = get_metrics_collector()
         
         # Should have recorded some operations
         all_metrics = collector.get_all_operation_metrics()
         self.assertGreater(len(all_metrics), 0)
 
-    @patch('core.memory_management.PSUTIL_AVAILABLE', False)
-    @patch('core.memory_management.psutil', None)
+    @patch('infrastructure.memory_management.PSUTIL_AVAILABLE', False)
+    @patch('infrastructure.memory_management.psutil', None)
     def test_memory_monitoring_without_psutil(self, mock_psutil=None):
         """Test memory monitoring gracefully handles missing psutil."""
         # Should still work without psutil

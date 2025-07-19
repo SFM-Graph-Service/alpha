@@ -10,20 +10,21 @@ from unittest.mock import MagicMock
 from typing import Dict, List, Any, Optional, Type, TypeVar
 from datetime import datetime
 
-from core.sfm_models import (
+from models import (
     Node, Actor, Institution, Policy, Resource, Process, Flow, 
-    Relationship, SFMGraph, 
+    Relationship,
 )
-from db.sfm_dao import (
+from data.repositories import (
     SFMRepository, TypedSFMRepository,
     ActorRepository, InstitutionRepository, PolicyRepository,
     ResourceRepository, ProcessRepository, FlowRepository,
     RelationshipRepository
 )
 
-from core.sfm_enums import RelationshipKind
+from models.sfm_enums import RelationshipKind
 
 T = TypeVar("T", bound=Node)
+from graph.graph import SFMGraph
 
 
 class MockStorageBackend:

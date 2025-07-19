@@ -13,15 +13,15 @@ from datetime import datetime
 
 import networkx as nx
 
-from core.sfm_models import (
+from models import (
     Actor,
     Institution,
     Resource,
     Relationship,
-    SFMGraph,
 )
-from core.sfm_enums import ResourceType, FlowNature, RelationshipKind
-from core.patterns.strategy import StrategyManager, CentralityAnalyzer
+from graph.graph import SFMGraph
+from models.sfm_enums import ResourceType, FlowNature, RelationshipKind
+from utils.patterns.strategy import StrategyManager, CentralityAnalyzer
 
 # Public API
 __all__ = [
@@ -1145,7 +1145,7 @@ class NetworkXSFMQueryEngine(SFMQueryEngine):  # pylint: disable=too-many-public
         }
 
         # Import Policy here to avoid circular import
-        from core.sfm_models import Policy
+        from models import Policy
 
         for i, graph in enumerate(scenario_graphs):
             # Count policy nodes in each scenario

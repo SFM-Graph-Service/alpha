@@ -8,11 +8,11 @@ and concurrency control features added to the SFM service.
 import pytest
 import uuid
 from unittest.mock import Mock, patch
-from core.sfm_service import SFMService, CreateActorRequest, CreatePolicyRequest, CreateRelationshipRequest
-from core.transaction_manager import TransactionStatus
-from core.lock_manager import LockType
-from core.sfm_service import SFMValidationError, SFMError
-from core.security_validators import disable_validation_rate_limiting
+from api.sfm_service import SFMService, CreateActorRequest, CreatePolicyRequest, CreateRelationshipRequest
+from infrastructure.transaction_manager import TransactionStatus
+from infrastructure.lock_manager import LockType
+from api.sfm_service import SFMValidationError, SFMError
+from infrastructure.security_validators import disable_validation_rate_limiting
 
 
 # Disable rate limiting for all tests in this module
@@ -25,7 +25,7 @@ class TestTransactionManagement:
     def setup_method(self):
         """Setup test fixtures."""
         # Create service with validation disabled to avoid rate limiting in tests
-        from core.sfm_service import SFMServiceConfig
+        from api.sfm_service import SFMServiceConfig
         config = SFMServiceConfig(validation_enabled=False)
         self.service = SFMService(config)
     
@@ -106,7 +106,7 @@ class TestDataIntegrity:
     def setup_method(self):
         """Setup test fixtures."""
         # Create service with validation disabled to avoid rate limiting in tests
-        from core.sfm_service import SFMServiceConfig
+        from api.sfm_service import SFMServiceConfig
         config = SFMServiceConfig(validation_enabled=False)
         self.service = SFMService(config)
     
@@ -178,8 +178,8 @@ class TestDataIntegrity:
         """Test automatic repair of orphaned relationships."""
         # Create a mock orphaned relationship by directly adding to the graph
         # This simulates a scenario where relationships exist but their entities don't
-        from core.sfm_models import Relationship
-        from core.sfm_enums import RelationshipKind
+        from models import Relationship
+        from models.sfm_enums import RelationshipKind
         
         # Create fake entity IDs that don't exist in the graph
         fake_id1 = uuid.uuid4()
@@ -214,7 +214,7 @@ class TestConcurrencyControl:
     def setup_method(self):
         """Setup test fixtures."""
         # Create service with validation disabled to avoid rate limiting in tests
-        from core.sfm_service import SFMServiceConfig
+        from api.sfm_service import SFMServiceConfig
         config = SFMServiceConfig(validation_enabled=False)
         self.service = SFMService(config)
     
@@ -277,7 +277,7 @@ class TestEnhancedMetrics:
     def setup_method(self):
         """Setup test fixtures."""
         # Create service with validation disabled to avoid rate limiting in tests
-        from core.sfm_service import SFMServiceConfig
+        from api.sfm_service import SFMServiceConfig
         config = SFMServiceConfig(validation_enabled=False)
         self.service = SFMService(config)
     
@@ -326,7 +326,7 @@ class TestErrorHandling:
     def setup_method(self):
         """Setup test fixtures."""
         # Create service with validation disabled to avoid rate limiting in tests
-        from core.sfm_service import SFMServiceConfig
+        from api.sfm_service import SFMServiceConfig
         config = SFMServiceConfig(validation_enabled=False)
         self.service = SFMService(config)
     

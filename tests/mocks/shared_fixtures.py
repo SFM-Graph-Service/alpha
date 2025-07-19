@@ -2,11 +2,10 @@
 Shafrom typing import Dict, List, Any, Optional
 from datetime import datetime
 
-from core.sfm_models import (
-    SFMGraph, Actor, Institution, Policy, Resource, Process, Flow,
+from models import ( Actor, Institution, Policy, Resource, Process, Flow,
     Relationship, Node, RelationshipKind
 )
-from core.sfm_enums import ResourceType, InstitutionLayer, ValueCategory, FlowNatureures and utilities for SFM testing.
+from models.sfm_enums import ResourceType, InstitutionLayer, ValueCategory, FlowNatureures and utilities for SFM testing.
 
 Provides common test data, mock graph creation, and utility functions
 used across multiple test modules.
@@ -16,11 +15,11 @@ import uuid
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-from core.sfm_models import (
-    SFMGraph, Actor, Institution, Policy, Resource, Process, Flow,
+from models import ( Actor, Institution, Policy, Resource, Process, Flow,
     Relationship, Node
 )
-from core.sfm_enums import ResourceType, InstitutionLayer, ValueCategory, RelationshipKind
+from graph.graph import SFMGraph
+from models.sfm_enums import ResourceType, InstitutionLayer, ValueCategory, RelationshipKind
 
 
 def create_mock_graph() -> SFMGraph:

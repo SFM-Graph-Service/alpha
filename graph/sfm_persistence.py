@@ -32,12 +32,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, Sequence, Mapping, Tuple
 
 # Local imports
-from core.sfm_enums import FlowNature, RelationshipKind, ResourceType, InstitutionLayer
-from core.sfm_models import (
+from models.sfm_enums import FlowNature, RelationshipKind, ResourceType, InstitutionLayer
+from models import (
     Actor, AnalyticalContext, BeliefSystem, FeedbackLoop, Flow, Indicator,
-    Institution, Node, Policy, Process, Relationship, Resource, SFMGraph,
+    Institution, Node, Policy, Process, Relationship, Resource,
     SystemProperty, TechnologySystem,
 )
+from graph.graph import SFMGraph
 
 # Setup logging
 logger = logging.getLogger(__name__)

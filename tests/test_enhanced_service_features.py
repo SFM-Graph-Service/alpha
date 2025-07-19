@@ -8,13 +8,13 @@ import time
 from unittest.mock import Mock, patch
 from datetime import datetime
 
-from core.sfm_service import (
+from api.sfm_service import (
     SFMService, SFMServiceConfig, CreateActorRequest, CreatePolicyRequest
 )
-from core.transaction_manager import TransactionManager, TransactionStatus
-from core.audit_logger import AuditLogger, AuditLevel, OperationType, get_audit_logger
-from core.performance_metrics import MetricsCollector, get_metrics_collector
-from core.security_validators import disable_validation_rate_limiting, clear_validation_rate_limit_storage
+from infrastructure.transaction_manager import TransactionManager, TransactionStatus
+from infrastructure.audit_logger import AuditLogger, AuditLevel, OperationType, get_audit_logger
+from infrastructure.performance_metrics import MetricsCollector, get_metrics_collector
+from infrastructure.security_validators import disable_validation_rate_limiting, clear_validation_rate_limit_storage
 
 
 class TestTransactionManagement(unittest.TestCase):
@@ -275,7 +275,7 @@ class TestEnhancedHealthMonitoring(unittest.TestCase):
         self.assertIsNotNone(health)
         self.assertIsNotNone(health.timestamp)
         # Health check should succeed
-        from core.sfm_service import ServiceStatus
+        from api.sfm_service import ServiceStatus
         self.assertEqual(health.status, ServiceStatus.HEALTHY)
 
     def test_health_with_error(self):
@@ -284,7 +284,7 @@ class TestEnhancedHealthMonitoring(unittest.TestCase):
         with patch.object(self.service, 'get_statistics', side_effect=Exception("Test error")):
             health = self.service.get_health()
             
-            from core.sfm_service import ServiceStatus
+            from api.sfm_service import ServiceStatus
             self.assertEqual(health.status, ServiceStatus.ERROR)
 
 

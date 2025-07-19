@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import networkx as nx
 
-from core.base_nodes import Node
+from models.base_nodes import Node
 
 
 class Strategy(ABC):

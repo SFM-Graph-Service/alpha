@@ -12,12 +12,12 @@ from typing import Any, List, Dict, Optional, TYPE_CHECKING
 from datetime import datetime
 from dataclasses import dataclass
 
-from core.base_nodes import Node
-from core.relationships import Relationship
+from models.base_nodes import Node
+from models.relationships import Relationship
 
 # Use TYPE_CHECKING to avoid circular imports
 if TYPE_CHECKING:
-    from core.graph import SFMGraph
+    from models.graph import SFMGraph
 
 
 class Command(ABC):

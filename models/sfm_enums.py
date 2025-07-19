@@ -21,8 +21,8 @@ This module implements key concepts from Hayden's Social Fabric Matrix framework
 ### Basic Usage Examples
 
 ```python
-# from core.sfm_models import Indicator, Flow, Relationship, Actor, Institution
-from core.sfm_enums import ValueCategory, FlowNature, RelationshipKind, ResourceType
+# from models import Indicator, Flow, Relationship, Actor, Institution
+from models.sfm_enums import ValueCategory, FlowNature, RelationshipKind, ResourceType
 
 # Create an economic indicator
 gdp_indicator = Indicator(
@@ -83,7 +83,7 @@ All enums support standard typing patterns:
 
 ```python
 from typing import Optional, List
-from core.sfm_enums import ValueCategory, InstitutionLayer
+from models.sfm_enums import ValueCategory, InstitutionLayer
 
 def create_policy_indicator(
     value_cat: ValueCategory,

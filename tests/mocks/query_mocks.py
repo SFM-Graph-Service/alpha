@@ -10,11 +10,11 @@ from unittest.mock import MagicMock, patch
 from typing import Dict, List, Any, Optional
 from contextlib import contextmanager
 
-from core.sfm_query import (
+from graph.sfm_query import (
     SFMQueryEngine, NetworkXSFMQueryEngine, QueryResult, 
     NodeMetrics, FlowAnalysis, AnalysisType
 )
-from core.sfm_models import Node, Actor, Institution, Policy, Resource
+from models import Node, Actor, Institution, Policy, Resource
 
 
 class MockNetworkXFunctions:

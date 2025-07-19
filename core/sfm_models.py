@@ -1,36 +1,30 @@
 """
 Core data structures for modeling F. Gregory Hayden's Social Fabric Matrix (SFM).
 
-This module serves as a unified import point for all SFM data structures.
-The classes have been organized into smaller, focused modules:
+This module serves as a backward compatibility layer, importing all SFM data structures
+from their new organized locations:
 
-- meta_entities: TimeSlice, SpatialUnit, Scenario
-- base_nodes: Node (base class)
-- core_nodes: Actor, Institution, Policy, Resource, Process, Flow, ValueFlow, GovernanceStructure
-- specialized_nodes: BeliefSystem, TechnologySystem, Indicator, FeedbackLoop, SystemProperty, AnalyticalContext, PolicyInstrument
-- behavioral_nodes: ValueSystem, CeremonialBehavior, InstrumentalBehavior, ChangeProcess, CognitiveFramework, BehavioralPattern
-- metadata_models: TemporalDynamics, ValidationRule, ModelMetadata
-- relationships: Relationship
-- graph: SFMGraph, NetworkMetrics
+- models/: Core data models and business entities
+- graph/: Graph operations and network metrics
 """
 
-# Import all classes from the modularized structure
-from core.meta_entities import TimeSlice, SpatialUnit, Scenario
-from core.base_nodes import Node
-from core.core_nodes import (
+# Import all classes from the reorganized structure for backward compatibility
+from models.meta_entities import TimeSlice, SpatialUnit, Scenario
+from models.base_nodes import Node
+from models.core_nodes import (
     Actor, Institution, Policy, Resource, Process, Flow, ValueFlow, GovernanceStructure
 )
-from core.specialized_nodes import (
+from models.specialized_nodes import (
     BeliefSystem, TechnologySystem, Indicator, FeedbackLoop, SystemProperty,
     AnalyticalContext, PolicyInstrument
 )
-from core.behavioral_nodes import (
+from models.behavioral_nodes import (
     ValueSystem, CeremonialBehavior, InstrumentalBehavior, ChangeProcess,
     CognitiveFramework, BehavioralPattern
 )
-from core.metadata_models import TemporalDynamics, ValidationRule, ModelMetadata
-from core.relationships import Relationship
-from core.graph import SFMGraph, NetworkMetrics
+from models.metadata_models import TemporalDynamics, ValidationRule, ModelMetadata
+from models.relationships import Relationship
+from graph.graph import SFMGraph, NetworkMetrics
 
 # Public API
 __all__ = [
