@@ -101,7 +101,7 @@ repo = SFMRepositoryFactory.create_repository("networkx")
 # Create entities with proper typing
 usda = Actor(label="USDA", sector="Government")
 farmers = Actor(label="Farmers Association", sector="Agriculture") 
-market = Institution(label="Commodity Market", layer=InstitutionLayer.FORMAL)
+market = Institution(label="Commodity Market", layer=InstitutionLayer.FORMAL_RULE)
 
 # Add to repository
 repo.create_node(usda)
@@ -113,8 +113,7 @@ regulation = Relationship(
     source_id=usda.id,
     target_id=farmers.id,
     kind=RelationshipKind.REGULATES,
-    weight=0.8,
-    description="USDA regulatory oversight of farming practices"
+    weight=0.8
 )
 repo.create_relationship(regulation)
 
@@ -146,7 +145,7 @@ service = SFMService(config)
 
 # Use high-level service operations
 actor_id = service.create_actor("USDA", "Government")
-institution_id = service.create_institution("Market", InstitutionLayer.FORMAL)
+institution_id = service.create_institution("Market", InstitutionLayer.FORMAL_RULE)
 
 # Create relationships through service
 service.create_relationship(
