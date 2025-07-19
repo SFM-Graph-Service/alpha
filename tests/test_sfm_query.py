@@ -758,7 +758,7 @@ class TestNetworkXSFMQueryEngineUnit(unittest.TestCase):
 
     def test_compare_policy_scenarios(self):
         """Test comparing policy scenarios."""
-        scenario_graphs = [self.graph()]
+        scenario_graphs = [self.graph, self.graph]  # Add two graphs for comparison
 
         comparison = self.query_engine.compare_policy_scenarios(scenario_graphs)
 

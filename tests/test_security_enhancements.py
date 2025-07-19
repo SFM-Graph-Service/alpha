@@ -86,7 +86,7 @@ class TestSecurityEnhancements(unittest.TestCase):
 
     def test_enhanced_error_logging(self):
         """Test that enhanced error logging works correctly."""
-        with patch('core.security_validators.logger') as mock_logger:
+        with patch('infrastructure.security_validators.logger') as mock_logger:
             # Try to validate a string that's too long
             long_string = "a" * 1001
             
@@ -146,7 +146,7 @@ class TestSecurityEnhancements(unittest.TestCase):
 
     def test_node_label_validation_with_logging(self):
         """Test node label validation with enhanced logging."""
-        with patch('core.security_validators.logger') as mock_logger:
+        with patch('infrastructure.security_validators.logger') as mock_logger:
             # Test empty label
             with self.assertRaises(SecurityValidationError) as context:
                 validate_node_label("")

@@ -240,8 +240,8 @@ class TestAdvancedPerformanceOptimizations(unittest.TestCase):
         all_metrics = collector.get_all_operation_metrics()
         self.assertGreater(len(all_metrics), 0)
 
-    @patch('core.memory_management.PSUTIL_AVAILABLE', False)
-    @patch('core.memory_management.psutil', None)
+    @patch('infrastructure.memory_management.PSUTIL_AVAILABLE', False)
+    @patch('infrastructure.memory_management.psutil', None)
     def test_memory_monitoring_without_psutil(self, mock_psutil=None):
         """Test memory monitoring gracefully handles missing psutil."""
         # Should still work without psutil
