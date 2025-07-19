@@ -9,11 +9,11 @@ import pytest
 import uuid
 from unittest.mock import Mock
 
-from core.sfm_service import SFMService
-from core.patterns.observer import MetricsObserver, CachingObserver
-from core.patterns.command import CommandManager, AddNodeCommand
-from core.patterns.event_bus import EventBus, Event, EventHandler
-from core.patterns.decorator import cache_result, audit_operation, AuditLevel
+from api.sfm_service import SFMService
+from utils.patterns.observer import MetricsObserver, CachingObserver
+from utils.patterns.command import CommandManager, AddNodeCommand
+from utils.patterns.event_bus import EventBus, Event, EventHandler
+from utils.patterns.decorator import cache_result, audit_operation, AuditLevel
 
 
 class TestServiceIntegration:
@@ -40,7 +40,7 @@ class TestServiceIntegration:
         
         # The service uses repository pattern, so we need to test direct graph operations
         # Let's add a node directly to the graph to test observer notifications
-        from core.core_nodes import Actor
+        from models.core_nodes import Actor
         direct_actor = Actor(
             id=uuid.uuid4(),
             label="Direct Actor",
@@ -69,7 +69,7 @@ class TestServiceIntegration:
         command_manager = CommandManager()
         
         # Create actor
-        from core.core_nodes import Actor
+        from models.core_nodes import Actor
         actor = Actor(
             id=uuid.uuid4(),
             label="Command Actor",

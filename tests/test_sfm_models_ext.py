@@ -8,7 +8,7 @@ import time
 from typing import Dict, Any, List, Tuple
 from dataclasses import FrozenInstanceError
 
-from core.sfm_models import (
+from models import (
     TimeSlice,
     SpatialUnit,
     Scenario,
@@ -18,7 +18,6 @@ from core.sfm_models import (
     Resource,
     Flow,
     Relationship,
-    SFMGraph,
     Policy,
     CeremonialBehavior,
     InstrumentalBehavior,
@@ -26,7 +25,7 @@ from core.sfm_models import (
     GovernanceStructure,
     ValueFlow,
 )
-from core.sfm_enums import (
+from models.sfm_enums import (
     ValueCategory,
     InstitutionLayer,
     ResourceType,
@@ -34,6 +33,7 @@ from core.sfm_enums import (
     RelationshipKind,
     PolicyInstrumentType,
 )
+from graph.graph import SFMGraph
 
 # Test Constants
 TEST_TIMEOUT = 5.0  # seconds for performance tests
@@ -684,7 +684,7 @@ class FlowTestCase(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures for Flow tests."""
-        from core.sfm_enums import FlowType
+        from models.sfm_enums import FlowType
         self.material_flow = Flow(
             label="Steel Input",
             nature=FlowNature.INPUT,
@@ -719,7 +719,7 @@ class FlowTestCase(unittest.TestCase):
 
     def test_flow_type_categories(self):
         """Test Flow type supports different flow categories."""
-        from core.sfm_enums import FlowType
+        from models.sfm_enums import FlowType
         flow_types = [
             FlowType.MATERIAL,
             FlowType.ENERGY,

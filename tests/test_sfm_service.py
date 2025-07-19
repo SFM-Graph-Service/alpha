@@ -15,7 +15,7 @@ from typing import Dict, List, Any
 import json
 
 # Import the classes under test
-from core.sfm_service import (
+from api.sfm_service import (
     SFMService,
     SFMServiceConfig,
     SFMError,
@@ -40,15 +40,15 @@ from core.sfm_service import (
 )
 
 # Import dependencies for testing
-from core.sfm_models import (
+from models import (
     Actor,
     Institution,
     Policy,
     Resource,
     Relationship,
 )
-from core.sfm_enums import ResourceType,RelationshipKind
-from db.sfm_dao import SFMRepositoryFactory
+from models.sfm_enums import ResourceType,RelationshipKind
+from data.repositories import SFMRepositoryFactory
 
 # Import centralized mock infrastructure
 from tests.mocks import (
@@ -59,7 +59,7 @@ from tests.mocks import (
 )
 
 # Disable rate limiting globally for all tests
-from core.security_validators import disable_validation_rate_limiting, clear_validation_rate_limit_storage
+from infrastructure.security_validators import disable_validation_rate_limiting, clear_validation_rate_limit_storage
 disable_validation_rate_limiting()
 clear_validation_rate_limit_storage()
 
@@ -410,7 +410,7 @@ class TestSFMServiceUnit(unittest.TestCase):
         self.assertEqual(response.kind, "GOVERNS")
         self.assertEqual(response.weight, 0.8)
 
-    @patch('core.sfm_service.datetime')
+    @patch('api.sfm_service.datetime')
     def test_get_health_success(self, mock_datetime):
         """Test successful health check."""
         mock_datetime.now.return_value.isoformat.return_value = "2025-06-26T10:00:00"

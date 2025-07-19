@@ -10,8 +10,7 @@ from typing import List, Dict, Any
 import networkx as nx
 from networkx import NetworkXError, NetworkXNoPath
 
-from core.sfm_models import (
-    SFMGraph,
+from models import (
     Actor,
     Institution,
     Resource,
@@ -21,8 +20,8 @@ from core.sfm_models import (
     Node,
     
 )
-from core.sfm_enums import ResourceType, FlowNature,RelationshipKind
-from core.sfm_query import (
+from models.sfm_enums import ResourceType, FlowNature,RelationshipKind
+from graph.sfm_query import (
     SFMQueryEngine,
     NetworkXSFMQueryEngine,
     SFMQueryFactory,
@@ -31,6 +30,7 @@ from core.sfm_query import (
     NodeMetrics,
     FlowAnalysis,
 )
+from graph.graph import SFMGraph
 
 # Import centralized mocks and fixtures
 from tests.mocks import (
@@ -758,7 +758,7 @@ class TestNetworkXSFMQueryEngineUnit(unittest.TestCase):
 
     def test_compare_policy_scenarios(self):
         """Test comparing policy scenarios."""
-        scenario_graphs = [self.graph, SFMGraph()]
+        scenario_graphs = [self.graph()]
 
         comparison = self.query_engine.compare_policy_scenarios(scenario_graphs)
 

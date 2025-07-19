@@ -2,11 +2,11 @@
 Test cases for the refactored SFMGraph.add_node() method.
 """
 import unittest
-from core.graph import SFMGraph
-from core.core_nodes import Actor, Institution, Resource, Process, Flow, ValueFlow, Policy, GovernanceStructure
-from core.specialized_nodes import BeliefSystem, TechnologySystem, Indicator, FeedbackLoop, SystemProperty, AnalyticalContext, PolicyInstrument
-from core.behavioral_nodes import ValueSystem, CeremonialBehavior, InstrumentalBehavior, ChangeProcess, CognitiveFramework, BehavioralPattern
-from core.sfm_enums import ResourceType, InstitutionLayer, FlowNature
+from graph.graph import SFMGraph
+from models.core_nodes import Actor, Institution, Resource, Process, Flow, ValueFlow, Policy, GovernanceStructure
+from models.specialized_nodes import BeliefSystem, TechnologySystem, Indicator, FeedbackLoop, SystemProperty, AnalyticalContext, PolicyInstrument
+from models.behavioral_nodes import ValueSystem, CeremonialBehavior, InstrumentalBehavior, ChangeProcess, CognitiveFramework, BehavioralPattern
+from models.sfm_enums import ResourceType, InstitutionLayer, FlowNature
 
 
 class TestSFMGraphRefactor(unittest.TestCase):
@@ -106,7 +106,7 @@ class TestSFMGraphRefactor(unittest.TestCase):
     
     def test_unsupported_node_type(self):
         """Test that unsupported node types raise TypeError."""
-        from core.base_nodes import Node
+        from models.base_nodes import Node
         
         # Create a generic Node (not a specialized type)
         generic_node = Node(label="Generic Node")

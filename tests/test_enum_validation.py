@@ -7,7 +7,7 @@ relationship validation.
 """
 
 import unittest
-from core.sfm_enums import (
+from models.sfm_enums import (
     SFMEnumError,
     IncompatibleEnumError, 
     InvalidEnumOperationError,

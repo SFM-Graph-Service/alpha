@@ -21,14 +21,14 @@ except ImportError:
     NetworkXError = Exception
     NetworkXNoPath = Exception
 
-from core.sfm_models import (
-    SFMGraph, Actor, Institution, Resource, Policy, Flow, Relationship, Node
+from models import ( Actor, Institution, Resource, Policy, Flow, Relationship, Node
 )
-from core.sfm_enums import ResourceType, FlowNature, RelationshipKind, InstitutionLayer
-from core.sfm_query import (
+from models.sfm_enums import ResourceType, FlowNature, RelationshipKind, InstitutionLayer
+from graph.sfm_query import (
     SFMQueryEngine, NetworkXSFMQueryEngine, SFMQueryFactory, AnalysisType,
     QueryResult, NodeMetrics, FlowAnalysis
 )
+from graph.graph import SFMGraph
 
 # Import centralized mocks and fixtures
 from tests.mocks import (

@@ -10,13 +10,13 @@ import unittest
 from unittest.mock import Mock, patch, MagicMock
 from typing import List, Dict, Any
 
-from core.advanced_caching import (
+from infrastructure.advanced_caching import (
     MemoryCache, TTLMemoryCache, RedisCache, MultiLevelCache,
     QueryCache, CacheWarmer, CacheMetrics, cached, CacheConfig,
     create_cache_manager, cached_operation
 )
-from core.cache_config import CacheConfigManager, CACHE_CONFIG
-from core.cache_monitoring import CacheMonitor, monitor_cache_performance
+from infrastructure.cache_config import CacheConfigManager, CACHE_CONFIG
+from infrastructure.cache_monitoring import CacheMonitor, monitor_cache_performance
 
 
 class TestRedisCacheBackend(unittest.TestCase):
@@ -298,8 +298,8 @@ class TestCacheFactory(unittest.TestCase):
         cache_manager = create_cache_manager(config)
         self.assertIsInstance(cache_manager, QueryCache)
     
-    @patch('core.advanced_caching.REDIS_AVAILABLE', True)
-    @patch('core.advanced_caching.RedisCache')
+    @patch('infrastructure.advanced_caching.REDIS_AVAILABLE', True)
+    @patch('infrastructure.advanced_caching.RedisCache')
     def test_create_cache_manager_with_redis(self, mock_redis_cache):
         """Test creating cache manager with Redis enabled."""
         config = CacheConfig(

@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
-from core.exceptions import (
+from models.exceptions import (
     SFMError,
     SFMValidationError,
     SFMNotFoundError,
@@ -31,9 +31,9 @@ from core.exceptions import (
     create_query_error,
     create_database_error,
 )
-from core.sfm_service import SFMService
-from db.sfm_dao import NetworkXSFMRepository
-from core.sfm_models import Actor
+from api.sfm_service import SFMService
+from data.repositories import NetworkXSFMRepository
+from models import Actor
 
 
 class TestErrorHandlingSystem(unittest.TestCase):
@@ -269,7 +269,7 @@ class TestErrorHandlingSystem(unittest.TestCase):
     def test_service_error_handling(self):
         """Test that service operations provide good error context."""
         # Test creating actor with invalid data
-        from core.sfm_service import CreateActorRequest
+        from api.sfm_service import CreateActorRequest
         
         # This should work fine
         request = CreateActorRequest(name="Test Actor")

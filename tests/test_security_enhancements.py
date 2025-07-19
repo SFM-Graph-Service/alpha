@@ -11,7 +11,7 @@ import unittest
 import time
 from unittest.mock import patch, MagicMock
 
-from core.security_validators import (
+from infrastructure.security_validators import (
     sanitize_string,
     validate_metadata,
     validate_url,

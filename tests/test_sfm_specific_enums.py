@@ -5,9 +5,9 @@ This module tests the new enums added to address Issue #28: Missing SFM-Specific
 """
 
 import unittest
-from core.sfm_enums import TechnologyReadinessLevel, LegitimacySource
-from core.sfm_models import TechnologySystem, ValueSystem
-from db.sfm_dao import SFMRepositoryFactory
+from models.sfm_enums import TechnologyReadinessLevel, LegitimacySource
+from models import TechnologySystem, ValueSystem
+from data.repositories import SFMRepositoryFactory
 
 
 class TestTechnologyReadinessLevel(unittest.TestCase):
@@ -141,7 +141,7 @@ class TestEnumCompatibility(unittest.TestCase):
 
     def test_path_dependency_type_exists(self):
         """Test that PathDependencyType enum already exists (from existing code)."""
-        from core.sfm_enums import PathDependencyType
+        from models.sfm_enums import PathDependencyType
         
         # Should have the expected values
         self.assertIn(PathDependencyType.WEAK, PathDependencyType)
@@ -151,7 +151,7 @@ class TestEnumCompatibility(unittest.TestCase):
 
     def test_institutional_change_type_exists(self):
         """Test that InstitutionalChangeType enum already exists (from existing code)."""
-        from core.sfm_enums import InstitutionalChangeType
+        from models.sfm_enums import InstitutionalChangeType
         
         # Should have various change mechanisms
         self.assertIn(InstitutionalChangeType.INCREMENTAL, InstitutionalChangeType)
@@ -165,7 +165,7 @@ class TestSFMSpecificEnumValidation(unittest.TestCase):
 
     def test_trl_validation_research_context(self):
         """Test TRL validation in research contexts."""
-        from core.sfm_enums import EnumValidator
+        from models.sfm_enums import EnumValidator
         
         # Research contexts should accept early TRL levels
         EnumValidator.validate_technology_readiness_level(
@@ -177,7 +177,7 @@ class TestSFMSpecificEnumValidation(unittest.TestCase):
 
     def test_trl_validation_commercial_context(self):
         """Test TRL validation in commercial contexts."""
-        from core.sfm_enums import EnumValidator
+        from models.sfm_enums import EnumValidator
         
         # Commercial contexts should accept high TRL levels
         EnumValidator.validate_technology_readiness_level(
@@ -189,7 +189,7 @@ class TestSFMSpecificEnumValidation(unittest.TestCase):
 
     def test_trl_validation_inappropriate_context(self):
         """Test TRL validation catches inappropriate usage."""
-        from core.sfm_enums import EnumValidator, IncompatibleEnumError
+        from models.sfm_enums import EnumValidator, IncompatibleEnumError
         
         # High TRL in research context should fail
         with self.assertRaises(IncompatibleEnumError):
@@ -205,7 +205,7 @@ class TestSFMSpecificEnumValidation(unittest.TestCase):
 
     def test_legitimacy_source_validation_traditional_context(self):
         """Test legitimacy source validation for traditional contexts."""
-        from core.sfm_enums import EnumValidator, IncompatibleEnumError
+        from models.sfm_enums import EnumValidator, IncompatibleEnumError
         
         # Traditional legitimacy inappropriate for modern bureaucracy
         with self.assertRaises(IncompatibleEnumError):
@@ -215,7 +215,7 @@ class TestSFMSpecificEnumValidation(unittest.TestCase):
 
     def test_legitimacy_source_validation_charismatic_context(self):
         """Test legitimacy source validation for charismatic contexts."""
-        from core.sfm_enums import EnumValidator, IncompatibleEnumError
+        from models.sfm_enums import EnumValidator, IncompatibleEnumError
         
         # Charismatic legitimacy inappropriate for large organizations
         with self.assertRaises(IncompatibleEnumError):
@@ -225,7 +225,7 @@ class TestSFMSpecificEnumValidation(unittest.TestCase):
 
     def test_legitimacy_source_validation_appropriate_contexts(self):
         """Test legitimacy source validation for appropriate contexts."""
-        from core.sfm_enums import EnumValidator
+        from models.sfm_enums import EnumValidator
         
         # Expert legitimacy appropriate for technical contexts
         EnumValidator.validate_legitimacy_source_context(

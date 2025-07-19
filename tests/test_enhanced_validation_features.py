@@ -9,7 +9,7 @@ This module tests the new validation enhancements including:
 """
 
 import unittest
-from core.sfm_enums import (
+from models.sfm_enums import (
     EnumValidator,
     RelationshipKind,
     IncompatibleEnumError,

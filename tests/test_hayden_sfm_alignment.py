@@ -13,7 +13,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import directly from the sfm_enums file to avoid networkx dependency
-from core.sfm_enums import (
+from models.sfm_enums import (
     RelationshipKind,
     PowerResourceType,
     ToolSkillTechnologyType,

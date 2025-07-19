@@ -8,8 +8,8 @@ including node retrieval, search, and relationship queries.
 import time
 import uuid
 from typing import List
-from core.sfm_service import SFMService, SFMServiceConfig, CreateActorRequest, CreateRelationshipRequest, NodeResponse
-from core.security_validators import disable_validation_rate_limiting, clear_validation_rate_limit_storage
+from api.sfm_service import SFMService, SFMServiceConfig, CreateActorRequest, CreateRelationshipRequest, NodeResponse
+from infrastructure.security_validators import disable_validation_rate_limiting, clear_validation_rate_limit_storage
 
 class TestLookupPerformance:
     """Test class for lookup performance benchmarks."""
