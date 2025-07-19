@@ -92,7 +92,7 @@ python -c "from core.sfm_models import SFMGraph, Actor; print('Installation succ
 ```python
 from core.sfm_models import SFMGraph, Actor, Institution, Relationship
 from models.sfm_enums import RelationshipKind, InstitutionLayer
-from db.sfm_dao import SFMRepositoryFactory
+from data.repositories import SFMRepositoryFactory
 from graph.sfm_query import SFMQueryFactory
 
 # Create a repository with NetworkX backend
@@ -184,8 +184,8 @@ SFM-Graph-Service/
 │   └── sfm_persistence.py         # Graph persistence and serialization utilities
 ├── api/                           # Service layer and API
 │   └── sfm_service.py             # High-level service facade for simplified usage
-├── db/                            # Data access layer
-│   └── sfm_dao.py                 # Repository pattern implementation (CRUD operations)
+├── data/                          # Data access and storage layer
+│   └── repositories.py           # Repository pattern implementation (CRUD operations)
 ├── infrastructure/                # Infrastructure components
 │   └── security_validators.py     # Security and validation utilities
 ├── tests/                         # Comprehensive test suite
@@ -397,7 +397,7 @@ All workflows are configured to run on:
 - **[Models Documentation](models/)**: Data model implementations and entity classes
 - **[Graph Operations](graph/)**: Graph structure, query engine, and persistence
 - **[API Service Layer](api/)**: High-level service facade and configuration
-- **[Database Module](db/)**: Repository patterns, type-safe operations, and storage backends
+- **[Data Access Layer](data/README.md)**: Repository patterns, type-safe operations, and storage backends
 
 ### Theoretical Foundation
 

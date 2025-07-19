@@ -1,79 +1,56 @@
 # Core Module Documentation
 
-This directory contains the fundamental data structures and analysis tools for the Social Fabric Matrix (SFM) framework.
+This directory provides a unified interface for all Social Fabric Matrix (SFM) components, maintaining backward compatibility while the underlying implementation has been reorganized into specialized modules.
 
-## Module Structure Overview
+## Module Purpose
 
-The core module has been refactored into a modular structure for better organization and maintainability:
+The core module serves as a **backward compatibility layer**, allowing existing code to continue working while providing access to the reorganized modular structure introduced in recent versions.
 
-### **Data Model Modules**
+## Current Structure
 
-#### `sfm_models.py` - **Unified Import Module**
-Provides a single entry point for all SFM model classes. Imports everything from the specialized modules below while maintaining backward compatibility.
+### **Unified Import Interface**
 
-#### `meta_entities.py` - **Dimensional Meta Entities**
-- `TimeSlice` - Discrete time periods for SFM accounting
-- `SpatialUnit` - Hierarchical spatial identifiers  
-- `Scenario` - Counterfactual or policy scenarios
+#### `sfm_models.py` - **Main Import Module** 
+This is the primary entry point that imports all SFM classes from their new locations:
 
-#### `base_nodes.py` - **Base Infrastructure**
-- `Node` - Generic graph node base class with UUID, metadata, versioning
-- `ValueSystem` - Base value system infrastructure
+```python
+# All these imports work seamlessly:
+from core.sfm_models import Actor, Institution, Resource, SFMGraph
+from core.sfm_models import Relationship, TimeSlice, Scenario
+```
 
-#### `core_nodes.py` - **Primary SFM Entities**
-- `Actor` - Individuals, firms, agencies, communities
-- `Institution` - Rules-in-use, organizations, informal norms
-- `Policy` - Specific policy interventions (inherits from Institution)
-- `Resource` - Stocks or assets available for transformation
-- `Process` - Transformation activities (production, consumption)
-- `Flow` - Quantified transfers of resources or value
-- `ValueFlow` - Specialized flows tracking value creation/distribution
-- `GovernanceStructure` - Formal/informal governance arrangements
+The module imports from the new modular structure:
+- **`models/`** - Data model implementations
+- **`graph/`** - Graph operations and analysis  
+- **`api/`** - Service layer and high-level API
 
-#### `specialized_nodes.py` - **Specialized SFM Components**
-- `BeliefSystem` - Cultural myths, ideology, worldviews
-- `TechnologySystem` - Coherent systems of techniques and tools
-- `Indicator` - Measurable proxies for system performance
-- `FeedbackLoop` - Feedback loops in the social fabric
-- `SystemProperty` - System-level properties and metrics
-- `AnalyticalContext` - Analysis metadata and configuration
-- `PolicyInstrument` - Specific tools for policy implementation
+## New Modular Organization
 
-#### `behavioral_nodes.py` - **Behavioral and Cognitive Components**
-- `CeremonialBehavior` - Hayden's ceremonial behaviors (resist change)
-- `InstrumentalBehavior` - Problem-solving, adaptive behaviors
-- `ChangeProcess` - Models of institutional/technological change
-- `CognitiveFramework` - Mental models and worldviews
-- `BehavioralPattern` - Recurring behavioral patterns
+The actual implementation has been reorganized for better maintainability:
 
-#### `metadata_models.py` - **Support Classes**
-- `TemporalDynamics` - Models change over time
-- `ValidationRule` - Data integrity validation rules
-- `ModelMetadata` - Documentation about models
+### **Implementation Modules**
 
-#### `relationships.py` - **Graph Connections**
-- `Relationship` - Typed edges connecting SFM nodes
+#### `models/` - **Data Model Implementation Directory**
+- `base_nodes.py` - Base Node class and infrastructure
+- `core_nodes.py` - Primary SFM entities (Actor, Institution, etc.)
+- `specialized_nodes.py` - Specialized components (TechnologySystem, etc.)
+- `behavioral_nodes.py` - Behavioral and cognitive components
+- `meta_entities.py` - Dimensional entities (TimeSlice, SpatialUnit, Scenario)
+- `relationships.py` - Graph relationships and connections
+- `sfm_enums.py` - Comprehensive enumeration definitions
+- `metadata_models.py` - Support and metadata classes
+- `exceptions.py` - Custom exception classes
 
-#### `graph.py` - **Graph Structure**
-- `SFMGraph` - Complete Social Fabric Matrix representation
-- `NetworkMetrics` - Network analysis metrics
+#### `graph/` - **Graph Operations and Analysis Directory**
+- `graph.py` - SFMGraph and NetworkMetrics classes
+- `sfm_query.py` - Query engine abstractions and implementations
+- `sfm_persistence.py` - Graph persistence and serialization utilities
 
-### **Analysis and Service Modules**
+#### `api/` - **Service Layer Directory**
+- `sfm_service.py` - High-level service facade for simplified usage
 
-#### `sfm_enums.py`
-Contains enumeration definitions that provide controlled vocabularies for categorizing entities and relationships. These ensure consistent data classification across different analyses.
-
-#### `sfm_query.py`
-Provides the query engine abstraction and NetworkX implementation for analyzing SFM graphs. This enables complex network analysis and policy impact assessment.
-
-#### `sfm_service.py`
-Provides a unified facade service that simplifies interaction with the SFM framework. This is the recommended entry point for most users, offering high-level operations without requiring direct manipulation of repositories or query engines.
-
-#### `sfm_persistence.py`
-Handles data persistence and storage operations for SFM graphs and entities.
-
-#### `security_validators.py`
-Contains validation logic for ensuring data integrity and security across the SFM framework.
+#### `data/` - **Data Access and Storage Layer Directory**  
+- `repositories.py` - Repository pattern implementation (CRUD operations)
 
 ## Core Data Model
 
@@ -131,38 +108,45 @@ Where values represent relationship weights (e.g., influence strength, flow volu
 
 ## Usage Patterns
 
-The modular structure supports multiple import patterns:
+The core module supports multiple import patterns for different use cases:
 
-### **Recommended: Import Everything**
+### **Recommended: Unified Import (Backward Compatible)**
 ```python
 from core.sfm_models import *
 
-# All classes are available
+# All classes are available through the unified interface
 actor = Actor(label="Test Actor", sector="Government")
 graph = SFMGraph(name="Example")
 graph.add_node(actor)
 ```
 
-### **Selective Imports**
+### **Selective Imports from Core**
 ```python
-from core.sfm_models import Actor, Institution, SFMGraph
-from core.meta_entities import TimeSlice
-from core.specialized_nodes import Indicator
+from core.sfm_models import Actor, Institution, SFMGraph, TimeSlice, Indicator
 ```
 
-### **Module-Specific Imports**
+### **Direct Module Imports (Advanced)**
+For users who want to import directly from the implementation modules:
+
 ```python
-from core.core_nodes import Actor, Institution
-from core.behavioral_nodes import ValueSystem
-from core.graph import SFMGraph
-from core.sfm_enums import RelationshipKind, ResourceType
+# Import from models directory
+from models.core_nodes import Actor, Institution
+from models.behavioral_nodes import ValueSystem  
+from models.sfm_enums import RelationshipKind, ResourceType
+
+# Import from graph directory
+from graph.graph import SFMGraph
+from graph.sfm_query import SFMQueryFactory
+
+# Import from api directory  
+from api.sfm_service import SFMService
 ```
 
 ## Basic Usage Example
 
 ```python
 from core.sfm_models import SFMGraph, Actor, Resource, Relationship
-from core.sfm_enums import RelationshipKind, ResourceType
+from models.sfm_enums import RelationshipKind, ResourceType
 
 # Create entities
 government = Actor(label="Government", sector="Public")
@@ -185,54 +169,46 @@ graph.add_relationship(regulation)
 
 ## Benefits of the Modular Structure
 
-1. **Better Organization** - Related classes are grouped together in focused modules
-2. **Reduced Complexity** - Smaller, focused modules are easier to understand and maintain
-3. **Improved Maintainability** - Changes can be made to specific areas without affecting others
-4. **Clear Separation of Concerns** - Each module has a specific responsibility
-5. **Backward Compatibility** - Existing code using `from core.sfm_models import *` continues to work
+1. **Backward Compatibility** - Existing code using `from core.sfm_models import *` continues to work
+2. **Better Organization** - Related classes are grouped together in focused modules under `models/`, `graph/`, `api/`
+3. **Reduced Complexity** - Smaller, focused modules are easier to understand and maintain
+4. **Improved Maintainability** - Changes can be made to specific areas without affecting others
+5. **Clear Separation of Concerns** - Each directory has a specific responsibility:
+   - `models/` - Data structures and business logic
+   - `graph/` - Graph operations and network analysis
+   - `api/` - Service layer and high-level interface
+   - `db/` - Data persistence and repository patterns
 6. **Type Safety** - Improved type hints and reduced circular dependencies
 7. **Selective Imports** - Import only what you need for better performance
 
+## Migration Notes
+
+**No migration required!** The core module maintains full backward compatibility. However, users can optionally benefit from:
+
+- **Better Performance**: Direct imports from specific modules reduce import overhead
+- **Enhanced IDE Support**: More specific imports improve code completion and error detection  
+- **Clearer Dependencies**: Understanding which specific modules your code depends on
+
 ## Quick Start with SFM Service
 
-The `SFMService` class provides the easiest way to work with SFM graphs:
+For the easiest experience, use the high-level service interface:
 
 ```python
-from core.sfm_service import SFMService
+from api.sfm_service import SFMService
 
 # Create service instance
 service = SFMService()
 
-# Create entities
-usda = service.create_actor(
-    name="USDA", 
-    description="US Department of Agriculture",
-    sector="government"
-)
-
-farm_bill = service.create_policy(
-    name="Farm Bill 2023",
-    description="Agricultural support legislation",
-    authority="US Congress"
-)
-
-wheat = service.create_resource(
-    name="Winter Wheat",
-    description="Primary grain crop",
-    rtype=ResourceType.BIOLOGICAL,
-    unit="bushels"
-)
+# Create entities using high-level methods
+usda = service.create_actor("USDA", "US Department of Agriculture", sector="government")
+farm_bill = service.create_policy("Farm Bill 2023", "Agricultural support legislation", authority="US Congress")
 
 # Create relationships
 service.connect(usda.id, farm_bill.id, "IMPLEMENTS")
-service.connect(farm_bill.id, wheat.id, "REGULATES")
 
 # Analyze the network
 stats = service.get_statistics()
-central_actors = service.find_most_influential_actors()
-path = service.find_shortest_path(usda.id, wheat.id)
-
-print(f"Graph has {stats['total_nodes']} nodes and {stats['total_relationships']} relationships")
+print(f"Graph has {stats['total_nodes']} nodes")
 ```
 
 ## Entity Relationship Diagram

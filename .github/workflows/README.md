@@ -4,7 +4,7 @@ This document describes the GitHub Actions workflows implemented for the SFM Gra
 
 ## Workflow Overview
 
-The project includes 7 comprehensive workflows designed to ensure code quality, security, performance, and documentation consistency:
+The project includes 8 comprehensive workflows designed to ensure code quality, security, performance, and documentation consistency:
 
 ### 1. Continuous Integration (`ci.yml`)
 **Purpose**: Core build and test validation
@@ -81,7 +81,22 @@ The project includes 7 comprehensive workflows designed to ensure code quality, 
 - Markdown files valid
 - Documentation builds successfully
 
-### 6. Pylint (`pylint.yml`)
+### 7. Test Examples (`test-examples.yml`)
+**Purpose**: Validate repository examples and demonstrations
+**Triggers**: Push to main/develop, Pull requests, Manual dispatch
+**Key Features**:
+- Automated testing of all repository examples
+- Output verification and pattern matching
+- Edge case testing and error scenario validation
+- Memory constraint testing
+- Comprehensive reporting with debugging artifacts
+
+**Quality Gates**:
+- All examples execute successfully
+- Expected outputs match patterns
+- Memory usage within limits
+
+### 8. Pylint (`pylint.yml`)
 **Purpose**: Legacy Pylint validation (enhanced version)
 **Triggers**: Push to main/develop, Pull requests
 **Key Features**:
@@ -89,7 +104,7 @@ The project includes 7 comprehensive workflows designed to ensure code quality, 
 - Score reporting and artifact generation
 - Enhanced error reporting
 
-### 7. Test Suite (`pytest.yml`)
+### 9. Test Suite (`pytest.yml`)
 **Purpose**: Legacy test execution (enhanced version)
 **Triggers**: Push to main/develop, Pull requests
 **Key Features**:
